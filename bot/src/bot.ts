@@ -1,7 +1,7 @@
 import { Bot } from "grammy";
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const MINI_APP_URL = process.env.MINI_APP_URL ?? "https://x402-ton.vercel.app";
+const MINI_APP_URL = process.env.MINI_APP_URL ?? "https://mesh402.vercel.app";
 
 if (!BOT_TOKEN) {
   console.error("BOT_TOKEN environment variable is required");
@@ -12,23 +12,29 @@ const bot = new Bot(BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
   await ctx.reply(
-    "Welcome to x402-TON!\n\n" +
-      "The first implementation of Coinbase's x402 payment protocol on TON. " +
-      "Watch AI agents pay for HTTP services with USDT in real-time.\n\n" +
+    "Welcome to mesh402!\n\n" +
+      "The open marketplace where AI agents discover, use, and pay for services on TON.\n\n" +
+      "Deploy your API, set a price in USDT, and start earning — or let an AI agent find and pay for the services you need.\n\n" +
       "Tap below to open the app:",
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Open x402-TON",
+              text: "Browse Marketplace",
               web_app: { url: MINI_APP_URL },
             },
           ],
           [
             {
-              text: "Live Agent Demo",
-              web_app: { url: `${MINI_APP_URL}/agent-demo` },
+              text: "Deploy a Service",
+              web_app: { url: `${MINI_APP_URL}/deploy` },
+            },
+          ],
+          [
+            {
+              text: "Agent Playground",
+              web_app: { url: `${MINI_APP_URL}/playground` },
             },
           ],
         ],
@@ -37,16 +43,16 @@ bot.command("start", async (ctx) => {
   );
 });
 
-bot.command("demo", async (ctx) => {
+bot.command("deploy", async (ctx) => {
   await ctx.reply(
-    "Watch an AI agent autonomously pay for API services using x402 on TON:",
+    "Deploy your API to the marketplace and start earning USDT:",
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Start Live Demo",
-              web_app: { url: `${MINI_APP_URL}/agent-demo` },
+              text: "Deploy Now",
+              web_app: { url: `${MINI_APP_URL}/deploy` },
             },
           ],
         ],
@@ -55,14 +61,14 @@ bot.command("demo", async (ctx) => {
   );
 });
 
-bot.command("pay", async (ctx) => {
-  await ctx.reply("Access paid services manually — pay with USDT on TON:", {
+bot.command("services", async (ctx) => {
+  await ctx.reply("Browse available paid services on the marketplace:", {
     reply_markup: {
       inline_keyboard: [
         [
           {
-            text: "Browse Services",
-            web_app: { url: `${MINI_APP_URL}/manual-pay` },
+            text: "Open Marketplace",
+            web_app: { url: MINI_APP_URL },
           },
         ],
       ],
@@ -70,8 +76,26 @@ bot.command("pay", async (ctx) => {
   });
 });
 
+bot.command("agent", async (ctx) => {
+  await ctx.reply(
+    "Watch an AI agent autonomously discover, chain, and pay for services:",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Open Agent Playground",
+              web_app: { url: `${MINI_APP_URL}/playground` },
+            },
+          ],
+        ],
+      },
+    },
+  );
+});
+
 bot.command("dashboard", async (ctx) => {
-  await ctx.reply("View your transaction history and stats:", {
+  await ctx.reply("View your revenue and transaction history:", {
     reply_markup: {
       inline_keyboard: [
         [
@@ -87,11 +111,12 @@ bot.command("dashboard", async (ctx) => {
 
 bot.command("help", async (ctx) => {
   await ctx.reply(
-    "x402-TON Bot Commands:\n\n" +
-      "/start — Welcome & open app\n" +
-      "/demo — Watch AI agent demo\n" +
-      "/pay — Access paid services\n" +
-      "/dashboard — Transaction history\n" +
+    "Bot Commands:\n\n" +
+      "/start — Welcome & browse marketplace\n" +
+      "/deploy — Deploy your API service\n" +
+      "/services — Browse paid services\n" +
+      "/agent — Watch AI agent demo\n" +
+      "/dashboard — Revenue & transaction history\n" +
       "/help — This message",
   );
 });
@@ -100,5 +125,5 @@ bot.catch((err) => {
   console.error("Bot error:", err);
 });
 
-console.log("Starting x402-TON bot...");
+console.log("Starting bot...");
 bot.start();
