@@ -1,84 +1,54 @@
 import { useMemo } from "react";
-import { BarChart3, TrendingUp, Wallet, Activity } from "lucide-react";
-import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
+import { motion, AnimatePresence } from "framer-motion";
+import { BarChart3, TrendingUp, Wallet, Activity, Wifi, WifiOff } from "lucide-react";
+import TransactionCard, {
+  type Transaction,
+} from "../components/payment/TransactionCard";
 import { useTonConnect } from "../hooks/useTonConnect";
-
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    service: "Weather API",
-    amount: "0.01 TON",
-    status: "confirmed",
-    timestamp: Date.now() - 120_000,
-  },
-  {
-    id: "2",
-    service: "Translation API",
-    amount: "0.02 TON",
-    status: "confirmed",
-    timestamp: Date.now() - 300_000,
-  },
-  {
-    id: "3",
-    service: "Image Analysis",
-    amount: "0.05 TON",
-    status: "pending",
-    timestamp: Date.now() - 600_000,
-  },
-  {
-    id: "4",
-    service: "Price Feed Oracle",
-    amount: "0.03 TON",
-    status: "confirmed",
-    timestamp: Date.now() - 900_000,
-  },
-  {
-    id: "5",
-    service: "Sentiment Analysis",
-    amount: "0.01 TON",
-    status: "failed",
-    timestamp: Date.now() - 1_200_000,
-  },
-  {
-    id: "6",
-    service: "Translation API",
-    amount: "0.02 TON",
-    status: "confirmed",
-    timestamp: Date.now() - 1_800_000,
-  },
-];
+import { useWebSocket } from "../hooks/useWebSocket";
 
 export default function Dashboard() {
   const { connected, shortAddress } = useTonConnect();
+  const { events, isConnected } = useWebSocket();
+
+  // Convert settlement events to transactions
+  const transactions: Transaction[] = useMemo(() => {
+    return events.map((evt, i) => ({
+      id: `${evt.transaction}-${i}`,
+      service: `Payment to ${evt.payTo ? evt.payTo.slice(0, 8) + "..." : "unknown"}`,
+      amount: `${evt.amount} ${evt.asset}`,
+      status: "confirmed" as const,
+      timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
+      txHash: evt.transaction,
+    }));
+  }, [events]);
 
   const totalSpent = useMemo(() => {
-    return mockTransactions
-      .filter((tx) => tx.status === "confirmed")
-      .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+    return transactions
+      .reduce((sum, tx) => {
+        const num = parseFloat(tx.amount);
+        return sum + (isNaN(num) ? 0 : num);
+      }, 0)
       .toFixed(3);
-  }, []);
-
-  const confirmedCount = mockTransactions.filter(
-    (tx) => tx.status === "confirmed",
-  ).length;
+  }, [transactions]);
 
   const stats = [
     {
       icon: Wallet,
       label: "Total Spent",
-      value: `${totalSpent} TON`,
+      value: transactions.length > 0 ? totalSpent : "0",
       color: "#3390EC",
     },
     {
       icon: Activity,
       label: "Transactions",
-      value: String(mockTransactions.length),
+      value: String(transactions.length),
       color: "#8B5CF6",
     },
     {
       icon: TrendingUp,
       label: "Success Rate",
-      value: `${Math.round((confirmedCount / mockTransactions.length) * 100)}%`,
+      value: transactions.length > 0 ? "100%" : "--",
       color: "#10B981",
     },
   ];
@@ -101,6 +71,27 @@ export default function Dashboard() {
           </p>
         </div>
       </section>
+
+      {/* Connection status */}
+      <div
+        className={`flex items-center gap-2 justify-center px-3 py-2 rounded-lg text-xs font-medium ${
+          isConnected
+            ? "bg-emerald-500/10 text-emerald-600"
+            : "bg-red-500/10 text-red-500"
+        }`}
+      >
+        {isConnected ? (
+          <>
+            <Wifi className="w-3.5 h-3.5" />
+            Live — receiving settlement events
+          </>
+        ) : (
+          <>
+            <WifiOff className="w-3.5 h-3.5" />
+            Connecting to facilitator...
+          </>
+        )}
+      </div>
 
       {/* Stats grid */}
       <section className="grid grid-cols-3 gap-2">
@@ -127,12 +118,35 @@ export default function Dashboard() {
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
           Recent Activity
+          {transactions.length > 0 && (
+            <span className="ml-2 text-[var(--color-text)]">
+              ({transactions.length})
+            </span>
+          )}
         </h2>
-        <div className="space-y-2">
-          {mockTransactions.map((tx) => (
-            <TransactionCard key={tx.id} {...tx} />
-          ))}
-        </div>
+        {transactions.length === 0 ? (
+          <div className="text-center py-8 text-sm text-[var(--color-hint)]">
+            {isConnected
+              ? "No settlement events yet this session. Transactions will appear here in real time."
+              : "Connecting to facilitator..."}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <AnimatePresence initial={false}>
+              {transactions.map((tx) => (
+                <motion.div
+                  key={tx.id}
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <TransactionCard {...tx} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </section>
     </div>
   );

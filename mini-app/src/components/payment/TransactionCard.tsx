@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, ExternalLink } from "lucide-react";
 
 export interface Transaction {
   id: string;
@@ -6,6 +6,7 @@ export interface Transaction {
   amount: string;
   status: "pending" | "confirmed" | "failed";
   timestamp: number;
+  txHash?: string;
 }
 
 const statusConfig = {
@@ -31,9 +32,19 @@ function formatTime(ts: number): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function TransactionCard({ service, amount, status, timestamp }: Transaction) {
+export default function TransactionCard({
+  service,
+  amount,
+  status,
+  timestamp,
+  txHash,
+}: Transaction) {
   const config = statusConfig[status];
   const Icon = config.icon;
+
+  const txUrl = txHash
+    ? `https://testnet.tonviewer.com/transaction/${txHash}`
+    : null;
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-secondary-bg)]">
@@ -47,10 +58,29 @@ export default function TransactionCard({ service, amount, status, timestamp }: 
         <p className="text-sm font-medium text-[var(--color-text)] truncate">
           {service}
         </p>
-        <p className="text-xs text-[var(--color-hint)]">{formatTime(timestamp)}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-xs text-[var(--color-hint)]">
+            {formatTime(timestamp)}
+          </p>
+          {txUrl && (
+            <a
+              href={txUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 text-xs text-[var(--color-primary)] hover:underline"
+            >
+              <ExternalLink className="w-2.5 h-2.5" />
+              <span className="font-mono">
+                {txHash!.slice(0, 6)}...{txHash!.slice(-4)}
+              </span>
+            </a>
+          )}
+        </div>
       </div>
       <div className="text-right shrink-0">
-        <p className="text-sm font-semibold text-[var(--color-text)]">{amount}</p>
+        <p className="text-sm font-semibold text-[var(--color-text)]">
+          {amount}
+        </p>
         <p className="text-xs" style={{ color: config.color }}>
           {config.label}
         </p>

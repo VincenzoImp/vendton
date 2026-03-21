@@ -1,49 +1,44 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Play, Square, Loader2 } from "lucide-react";
+import { Bot, Loader2, Wifi, WifiOff } from "lucide-react";
 import PaymentFlow from "../components/payment/PaymentFlow";
-import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
-
-const sampleServices = [
-  "Weather API",
-  "Translation API",
-  "Image Recognition",
-  "Sentiment Analysis",
-  "Price Feed Oracle",
-];
-
-function randomTx(): Transaction {
-  const service = sampleServices[Math.floor(Math.random() * sampleServices.length)];
-  const amount = (Math.random() * 0.5 + 0.01).toFixed(3);
-  return {
-    id: crypto.randomUUID(),
-    service,
-    amount: `${amount} TON`,
-    status: "confirmed",
-    timestamp: Date.now(),
-  };
-}
+import TransactionCard, {
+  type Transaction,
+} from "../components/payment/TransactionCard";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 export default function AgentDemo() {
-  const [running, setRunning] = useState(false);
+  const { events, isConnected, lastEvent } = useWebSocket();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [flowKey, setFlowKey] = useState(0);
+  const [flowActive, setFlowActive] = useState(false);
 
-  const startAgent = useCallback(() => {
-    setRunning(true);
-    setFlowKey((k) => k + 1);
-  }, []);
+  // Convert settlement events to transactions for display
+  useEffect(() => {
+    setTransactions(
+      events.map((evt, i) => ({
+        id: `${evt.transaction}-${i}`,
+        service: `Payment to ${evt.payTo ? evt.payTo.slice(0, 8) + "..." : "unknown"}`,
+        amount: `${evt.amount} ${evt.asset}`,
+        status: "confirmed" as const,
+        timestamp:
+          typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
+        txHash: evt.transaction,
+      })),
+    );
+  }, [events]);
 
-  const stopAgent = useCallback(() => {
-    setRunning(false);
-  }, []);
+  // Trigger payment flow animation when a new settlement arrives
+  useEffect(() => {
+    if (lastEvent) {
+      setFlowActive(true);
+      setFlowKey((k) => k + 1);
+    }
+  }, [lastEvent]);
 
   const handleFlowComplete = useCallback(() => {
-    setTransactions((prev) => [randomTx(), ...prev].slice(0, 20));
-    if (running) {
-      setTimeout(() => setFlowKey((k) => k + 1), 800);
-    }
-  }, [running]);
+    setFlowActive(false);
+  }, []);
 
   return (
     <div className="px-4 py-6 space-y-6">
@@ -57,38 +52,39 @@ export default function AgentDemo() {
             Agent Demo
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Autonomous agent paying for API calls
+            Live agent transactions via WebSocket
           </p>
         </div>
       </section>
 
-      {/* Controls */}
-      <section className="flex gap-3">
-        {!running ? (
-          <button
-            onClick={startAgent}
-            className="flex items-center gap-2 flex-1 justify-center px-4 py-3 rounded-xl text-white font-semibold text-sm transition-transform active:scale-[0.97]"
-            style={{ backgroundColor: "var(--color-primary)" }}
-          >
-            <Play className="w-4 h-4" />
-            Start Agent
-          </button>
-        ) : (
-          <button
-            onClick={stopAgent}
-            className="flex items-center gap-2 flex-1 justify-center px-4 py-3 rounded-xl bg-red-500 text-white font-semibold text-sm transition-transform active:scale-[0.97]"
-          >
-            <Square className="w-4 h-4" />
-            Stop Agent
-          </button>
-        )}
+      {/* Connection Status */}
+      <section>
+        <div
+          className={`flex items-center gap-2 justify-center px-4 py-3 rounded-xl text-sm font-medium ${
+            isConnected
+              ? "bg-emerald-500/10 text-emerald-600"
+              : "bg-red-500/10 text-red-500"
+          }`}
+        >
+          {isConnected ? (
+            <>
+              <Wifi className="w-4 h-4" />
+              Connected to facilitator
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-4 h-4" />
+              Connecting to facilitator...
+            </>
+          )}
+        </div>
       </section>
 
       {/* Status */}
-      {running && (
+      {isConnected && transactions.length === 0 && (
         <div className="flex items-center gap-2 justify-center text-xs text-[var(--color-hint)]">
           <Loader2 className="w-3 h-3 animate-spin" />
-          Agent is running...
+          Waiting for agent transactions...
         </div>
       )}
 
@@ -99,7 +95,7 @@ export default function AgentDemo() {
         </h2>
         <PaymentFlow
           key={flowKey}
-          autoPlay={running}
+          autoPlay={flowActive}
           onComplete={handleFlowComplete}
         />
       </section>
@@ -108,10 +104,17 @@ export default function AgentDemo() {
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
           Transaction Feed
+          {transactions.length > 0 && (
+            <span className="ml-2 text-[var(--color-text)]">
+              ({transactions.length})
+            </span>
+          )}
         </h2>
         {transactions.length === 0 ? (
           <div className="text-center py-8 text-sm text-[var(--color-hint)]">
-            Start the agent to see transactions appear here
+            {isConnected
+              ? "No transactions yet. Waiting for agent activity..."
+              : "Connect to see live transactions"}
           </div>
         ) : (
           <div className="space-y-2">

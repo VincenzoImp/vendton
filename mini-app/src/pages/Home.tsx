@@ -1,14 +1,11 @@
 import { Link } from "react-router-dom";
 import { useTonConnect } from "../hooks/useTonConnect";
+import { useWebSocket } from "../hooks/useWebSocket";
 import PaymentFlow from "../components/payment/PaymentFlow";
-import { Bot, CreditCard, BarChart3, Zap } from "lucide-react";
+import { Bot, CreditCard, BarChart3, Zap, Wifi, WifiOff } from "lucide-react";
 
-const stats = [
-  { label: "Protocol", value: "x402" },
-  { label: "Network", value: "TON" },
-  { label: "Latency", value: "<2s" },
-  { label: "Status", value: "Live" },
-];
+const USDT_CONTRACT = "EQBynBO23ywHy_CgarY9NK9FTz0yDsG82PtcbSTQgGoXwiuA";
+const NETWORK = "TON Testnet";
 
 const navCards = [
   {
@@ -36,6 +33,17 @@ const navCards = [
 
 export default function Home() {
   const { connected, connect } = useTonConnect();
+  const { isConnected } = useWebSocket();
+
+  const stats = [
+    { label: "Protocol", value: "x402" },
+    { label: "Network", value: NETWORK.replace("TON ", "") },
+    { label: "Asset", value: "USDT" },
+    {
+      label: "Facilitator",
+      value: isConnected ? "Online" : "Offline",
+    },
+  ];
 
   return (
     <div className="px-4 py-6 space-y-6">
@@ -48,9 +56,32 @@ export default function Home() {
           x402 on TON
         </h1>
         <p className="text-sm text-[var(--color-hint)] max-w-xs mx-auto leading-relaxed">
-          HTTP 402 payments, natively on the TON blockchain. Pay for APIs with
-          a single transaction, no subscriptions required.
+          HTTP 402 payments, natively on the TON blockchain. Pay for APIs with a
+          single transaction, no subscriptions required.
         </p>
+      </section>
+
+      {/* Facilitator connection status */}
+      <section className="flex justify-center">
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+            isConnected
+              ? "bg-emerald-500/10 text-emerald-600"
+              : "bg-red-500/10 text-red-500"
+          }`}
+        >
+          {isConnected ? (
+            <>
+              <Wifi className="w-3 h-3" />
+              Facilitator connected
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-3 h-3" />
+              Facilitator offline
+            </>
+          )}
+        </div>
       </section>
 
       {/* Connect Wallet */}
@@ -89,6 +120,21 @@ export default function Home() {
             </span>
           </div>
         ))}
+      </section>
+
+      {/* Contract info */}
+      <section className="p-3 rounded-xl bg-[var(--color-secondary-bg)]">
+        <p className="text-[10px] text-[var(--color-hint)] uppercase tracking-wider mb-1">
+          USDT Contract ({NETWORK})
+        </p>
+        <a
+          href={`https://testnet.tonviewer.com/${USDT_CONTRACT}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-mono text-[var(--color-primary)] break-all hover:underline"
+        >
+          {USDT_CONTRACT}
+        </a>
       </section>
 
       {/* Navigation cards */}
