@@ -6,7 +6,6 @@ import {
   SendMode,
 } from "@ton/core";
 import { WalletContractV5R1, TonClient } from "@ton/ton";
-import nacl from "tweetnacl";
 import {
   getWalletSeqno,
   getJettonWalletAddress,
@@ -28,24 +27,17 @@ interface PaymentRequirements {
 interface X402Response {
   x402Version: number;
   accepts: PaymentRequirements[];
-  description?: string;
 }
 
 export interface PaymentEvent {
   type: "payment";
   service: string;
+  serviceName?: string;
   amount: string;
   recipient: string;
   timestamp: number;
 }
 
-/**
- * Make an HTTP request that handles x402 payments automatically.
- *
- * 1. Send initial request
- * 2. If 402 → parse requirements, sign payment, retry
- * 3. Return the final response data
- */
 export async function makePayableRequest(
   url: string,
   method: string,
@@ -54,22 +46,20 @@ export async function makePayableRequest(
   tonClient: TonClient,
   onPayment?: (event: PaymentEvent) => void,
 ): Promise<{ status: number; data: unknown }> {
-  // Initial request
   const initialRes = await fetch(url, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body,
   });
 
-  // Not a 402 — return directly
   if (initialRes.status !== 402) {
     const data = await initialRes.json().catch(() => initialRes.text());
     return { status: initialRes.status, data };
   }
 
-  // Parse 402 response
   const paymentRequiredHeader = initialRes.headers.get("x-payment-required");
   let requirements: PaymentRequirements;
+  let serviceName: string | undefined;
 
   if (paymentRequiredHeader) {
     const decoded: X402Response = JSON.parse(
@@ -78,22 +68,21 @@ export async function makePayableRequest(
     requirements = decoded.accepts[0];
   } else {
     const errorBody = await initialRes.json();
-    requirements = errorBody.accepts?.[0];
+    requirements = errorBody.accepts?.[0] ?? errorBody.requirements?.accepts?.[0];
+    serviceName = errorBody.service?.name;
   }
 
   if (!requirements) {
     throw new Error("Could not parse payment requirements from 402 response");
   }
 
-  // Spending limits
-  const MAX_PER_TX = 10_000_000; // 10 USDT max per transaction
+  const MAX_PER_TX = 10_000_000;
   if (BigInt(requirements.amount) > BigInt(MAX_PER_TX)) {
     throw new Error(
       `Amount ${requirements.amount} exceeds per-transaction limit of ${MAX_PER_TX}`,
     );
   }
 
-  // Create payment
   const seqno = await getWalletSeqno(tonClient, agentWallet.wallet);
   const jettonMaster = Address.parse(requirements.asset);
   const senderJettonWallet = await getJettonWalletAddress(
@@ -104,7 +93,6 @@ export async function makePayableRequest(
 
   const destination = Address.parse(requirements.payTo);
 
-  // Build Jetton transfer body
   const jettonTransferBody = beginCell()
     .storeUint(JETTON_TRANSFER_OP, 32)
     .storeUint(0, 64)
@@ -116,7 +104,6 @@ export async function makePayableRequest(
     .storeBit(false)
     .endCell();
 
-  // Build wallet transfer
   const transfer = agentWallet.wallet.createTransfer({
     seqno,
     secretKey: Buffer.from(agentWallet.keypair.secretKey),
@@ -144,22 +131,19 @@ export async function makePayableRequest(
     },
   };
 
-  // Emit payment event
   onPayment?.({
     type: "payment",
     service: url,
+    serviceName: serviceName ?? (requirements.extra?.serviceName as string),
     amount: requirements.amount,
     recipient: requirements.payTo,
     timestamp: Date.now(),
   });
 
-  // Retry with payment
   const paidRes = await fetch(url, {
     method,
     headers: {
-      "X-PAYMENT": Buffer.from(JSON.stringify(paymentPayload)).toString(
-        "base64",
-      ),
+      "X-PAYMENT": Buffer.from(JSON.stringify(paymentPayload)).toString("base64"),
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
     body,

@@ -9,10 +9,6 @@ export interface AgentWallet {
   address: Address;
 }
 
-/**
- * Create or restore the agent's TON wallet.
- * Uses a deterministic seed from env or generates a new one.
- */
 export function createAgentWallet(privateKeyHex?: string): AgentWallet {
   let keypair: nacl.SignKeyPair;
 
@@ -37,9 +33,6 @@ export function createAgentWallet(privateKeyHex?: string): AgentWallet {
   };
 }
 
-/**
- * Get the agent's current wallet seqno.
- */
 export async function getWalletSeqno(
   tonClient: TonClient,
   wallet: WalletContractV5R1,
@@ -48,13 +41,10 @@ export async function getWalletSeqno(
     const contract = tonClient.open(wallet);
     return await contract.getSeqno();
   } catch {
-    return 0; // New wallet, not deployed yet
+    return 0;
   }
 }
 
-/**
- * Get the agent's Jetton wallet address for a given Jetton master.
- */
 export async function getJettonWalletAddress(
   tonClient: TonClient,
   ownerAddress: Address,
@@ -73,9 +63,6 @@ export async function getJettonWalletAddress(
   return result.stack.readAddress();
 }
 
-/**
- * Get Jetton (USDT) balance for an address.
- */
 export async function getJettonBalance(
   tonClient: TonClient,
   jettonWalletAddress: Address,

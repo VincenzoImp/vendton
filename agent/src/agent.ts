@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { TonClient } from "@ton/ton";
 import { Address } from "@ton/core";
-import { agentTools } from "./tools.js";
+import { meshAgentTools } from "./tools.js";
 import {
   createAgentWallet,
   getJettonBalance,
@@ -9,78 +9,102 @@ import {
 } from "./wallet.js";
 import { makePayableRequest, type PaymentEvent } from "./x402-client.js";
 
-// Config
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const TON_RPC_URL =
-  process.env.TON_RPC_URL ??
-  "https://testnet.toncenter.com/api/v2/jsonRPC";
+const TON_RPC_URL = process.env.TON_RPC_URL ?? "https://testnet.toncenter.com/api/v2/jsonRPC";
 const TON_API_KEY = process.env.TON_API_KEY;
 const AGENT_PRIVATE_KEY = process.env.AGENT_PRIVATE_KEY;
-const USDT_MASTER =
-  process.env.USDT_MASTER_ADDRESS ??
-  "EQAAYQf_d4ekMhxzZ-DQeKXK_KMFwdmK7SvFRxNlkHhN0VBi";
-const DEMO_API_URL = process.env.DEMO_API_URL ?? "http://localhost:3002";
+const USDT_MASTER = process.env.USDT_MASTER_ADDRESS ?? "EQAAYQf_d4ekMhxzZ-DQeKXK_KMFwdmK7SvFRxNlkHhN0VBi";
+const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://localhost:4000";
 
 if (!ANTHROPIC_API_KEY) {
   console.error("ANTHROPIC_API_KEY is required");
   process.exit(1);
 }
 
-// Initialize
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
-const tonClient = new TonClient({
-  endpoint: TON_RPC_URL,
-  apiKey: TON_API_KEY,
-});
+const tonClient = new TonClient({ endpoint: TON_RPC_URL, apiKey: TON_API_KEY });
 const agentWallet = createAgentWallet(AGENT_PRIVATE_KEY);
 
 console.log(`Agent wallet: ${agentWallet.address.toString()}`);
 
-// Payment event log
 const paymentLog: PaymentEvent[] = [];
 
 function onPayment(event: PaymentEvent) {
   paymentLog.push(event);
   const amountUSDT = (Number(event.amount) / 1_000_000).toFixed(2);
-  console.log(`[PAYMENT] ${amountUSDT} USDT → ${event.service}`);
+  console.log(`[PAYMENT] ${amountUSDT} USDT -> ${event.serviceName ?? event.service}`);
 }
 
-/**
- * Handle a tool call from the LLM.
- */
 async function handleToolCall(
   name: string,
   input: Record<string, unknown>,
 ): Promise<string> {
   switch (name) {
-    case "call_paid_api": {
-      const url = input.url as string;
-      const method = (input.method as string) ?? "GET";
-      const body = input.body as string | undefined;
+    case "discover_services": {
+      const query = input.query as string;
+      const tags = input.tags as string[] | undefined;
+      const maxPrice = input.max_price as string | undefined;
 
       try {
-        const result = await makePayableRequest(
-          url,
-          method,
-          body,
-          agentWallet,
-          tonClient,
-          onPayment,
-        );
+        const params = new URLSearchParams();
+        if (query) params.set("q", query);
+        if (tags && tags.length > 0) params.set("tags", tags.join(","));
+        if (maxPrice) params.set("maxPrice", maxPrice);
+
+        const res = await fetch(`${GATEWAY_URL}/api/services?${params}`);
+        const data = await res.json();
+
+        if (!data.services || data.services.length === 0) {
+          return "No services found matching your query. Try a broader search.";
+        }
+
+        return data.services
+          .map((s: Record<string, unknown>) =>
+            `- **${s.name}** (ID: ${s.id})\n  ${s.description}\n  Price: ${s.priceReadable} | Tags: ${(s.tags as string[]).join(", ")}${s.ensName ? ` | ENS: ${s.ensName}` : ""}`,
+          )
+          .join("\n\n");
+      } catch (error) {
+        return `Error discovering services: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    }
+
+    case "call_service": {
+      const serviceId = input.service_id as string;
+      const params = input.params as Record<string, unknown> | undefined;
+
+      try {
+        let url = `${GATEWAY_URL}/proxy/${serviceId}`;
+        let method = "GET";
+        let body: string | undefined;
+
+        // First get service details to determine method
+        const infoRes = await fetch(`${GATEWAY_URL}/api/services/${serviceId}`);
+        if (infoRes.ok) {
+          const info = await infoRes.json();
+          method = info.service?.method ?? "GET";
+        }
+
+        if (method === "GET" && params) {
+          const queryParams = new URLSearchParams();
+          for (const [key, value] of Object.entries(params)) {
+            queryParams.set(key, String(value));
+          }
+          url += `?${queryParams}`;
+        } else if (method === "POST" && params) {
+          body = JSON.stringify(params);
+        }
+
+        const result = await makePayableRequest(url, method, body, agentWallet, tonClient, onPayment);
         return JSON.stringify(result.data, null, 2);
       } catch (error) {
-        return `Error: ${error instanceof Error ? error.message : String(error)}`;
+        return `Error calling service: ${error instanceof Error ? error.message : String(error)}`;
       }
     }
 
     case "check_balance": {
       try {
         const jettonMaster = Address.parse(USDT_MASTER);
-        const jettonWallet = await getJettonWalletAddress(
-          tonClient,
-          agentWallet.address,
-          jettonMaster,
-        );
+        const jettonWallet = await getJettonWalletAddress(tonClient, agentWallet.address, jettonMaster);
         const balance = await getJettonBalance(tonClient, jettonWallet);
         const usdtBalance = (Number(balance) / 1_000_000).toFixed(6);
         return `Agent USDT balance: ${usdtBalance} USDT\nWallet: ${agentWallet.address.toString()}`;
@@ -89,14 +113,14 @@ async function handleToolCall(
       }
     }
 
-    case "list_services": {
-      const apiUrl = (input.api_url as string) ?? DEMO_API_URL;
+    case "resolve_ens": {
+      const ensName = input.name as string;
       try {
-        const res = await fetch(`${apiUrl}/api/services`);
-        const services = await res.json();
-        return JSON.stringify(services, null, 2);
+        const res = await fetch(`${GATEWAY_URL}/api/ens/resolve/${encodeURIComponent(ensName)}`);
+        const data = await res.json();
+        return JSON.stringify(data, null, 2);
       } catch (error) {
-        return `Could not list services: ${error instanceof Error ? error.message : String(error)}`;
+        return `ENS resolution failed: ${error instanceof Error ? error.message : String(error)}`;
       }
     }
 
@@ -105,32 +129,42 @@ async function handleToolCall(
   }
 }
 
-/**
- * Run the agent loop for a user message.
- */
+const MAX_ITERATIONS = 15;
+
+const SYSTEM_PROMPT =
+  "You are an autonomous AI agent on the mesh402 marketplace — an open platform where AI agents " +
+  "discover, use, and pay for services on the TON blockchain using USDT.\n\n" +
+  "Your workflow:\n" +
+  "1. ALWAYS start by discovering available services using discover_services\n" +
+  "2. Select the best service(s) for the task\n" +
+  "3. Call services using call_service — payment happens automatically via x402\n" +
+  "4. Chain multiple services when needed (e.g. get data, then translate it)\n" +
+  "5. Report results clearly, including costs\n\n" +
+  "You have a TON wallet with USDT. Be cost-conscious but don't hesitate to pay for quality services. " +
+  "When chaining services, pass the output of one as input to the next.\n\n" +
+  `Gateway: ${GATEWAY_URL}`;
+
 export async function runAgent(userMessage: string): Promise<string> {
+  // Clear payment log for this run
+  paymentLog.length = 0;
+
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: userMessage },
   ];
 
-  const systemPrompt =
-    "You are an autonomous AI agent with a TON blockchain wallet containing USDT. " +
-    "You can call paid API services using the x402 payment protocol. " +
-    "When asked to do something that requires an API call, use the available tools. " +
-    "First list available services, then call the appropriate one. " +
-    "Always check your balance before making expensive calls. " +
-    `Available API server: ${DEMO_API_URL}`;
+  let iteration = 0;
 
-  while (true) {
+  while (iteration < MAX_ITERATIONS) {
+    iteration++;
+
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      system: systemPrompt,
-      tools: agentTools,
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      tools: meshAgentTools,
       messages,
     });
 
-    // If no tool use, return the text response
     if (response.stop_reason !== "tool_use") {
       const textBlocks = response.content.filter(
         (b): b is Anthropic.TextBlock => b.type === "text",
@@ -138,7 +172,6 @@ export async function runAgent(userMessage: string): Promise<string> {
       return textBlocks.map((b) => b.text).join("\n");
     }
 
-    // Process tool calls
     messages.push({ role: "assistant", content: response.content });
 
     const toolResults: Anthropic.ToolResultBlockParam[] = [];
@@ -160,20 +193,107 @@ export async function runAgent(userMessage: string): Promise<string> {
 
     messages.push({ role: "user", content: toolResults });
   }
+
+  return "Agent reached maximum iteration limit. Please try a simpler request.";
 }
 
-// HTTP server mode (when PORT is set) or CLI mode
+type SendEventFn = (type: string, data: unknown) => void;
+
+async function handleToolCallWithEvents(
+  name: string,
+  input: Record<string, unknown>,
+  sendEvent: SendEventFn,
+): Promise<string> {
+  sendEvent("tool_call", { tool: name, input });
+
+  const result = await handleToolCall(name, input);
+
+  // Check if a payment happened during this tool call
+  if (paymentLog.length > 0) {
+    const latest = paymentLog[paymentLog.length - 1];
+    sendEvent("payment", {
+      amount: (Number(latest.amount) / 1_000_000).toFixed(2) + " USDT",
+      service: latest.serviceName ?? latest.service,
+    });
+  }
+
+  const truncated = result.length > 200 ? result.slice(0, 200) + "..." : result;
+  sendEvent("tool_result", { tool: name, result: truncated });
+
+  return result;
+}
+
+export async function runAgentWithEvents(
+  userMessage: string,
+  sendEvent: SendEventFn,
+): Promise<string> {
+  paymentLog.length = 0;
+
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: userMessage },
+  ];
+
+  sendEvent("thinking", {});
+
+  let iteration = 0;
+
+  while (iteration < MAX_ITERATIONS) {
+    iteration++;
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      tools: meshAgentTools,
+      messages,
+    });
+
+    if (response.stop_reason !== "tool_use") {
+      const textBlocks = response.content.filter(
+        (b): b is Anthropic.TextBlock => b.type === "text",
+      );
+      return textBlocks.map((b) => b.text).join("\n");
+    }
+
+    messages.push({ role: "assistant", content: response.content });
+
+    const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+    for (const block of response.content) {
+      if (block.type === "tool_use") {
+        console.log(`[TOOL] ${block.name}(${JSON.stringify(block.input)})`);
+        const result = await handleToolCallWithEvents(
+          block.name,
+          block.input as Record<string, unknown>,
+          sendEvent,
+        );
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: result,
+        });
+      }
+    }
+
+    messages.push({ role: "user", content: toolResults });
+
+    sendEvent("thinking", {});
+  }
+
+  return "Agent reached maximum iteration limit. Please try a simpler request.";
+}
+
+// HTTP server mode or CLI mode
 const PORT = process.env.AGENT_PORT ? parseInt(process.env.AGENT_PORT) : null;
 
 if (PORT) {
-  // HTTP server — the mini-app AgentDemo page can POST prompts
-  const [{ default: express }, { default: cors }] = await Promise.all([
+  const [{ default: express }, { default: corsModule }] = await Promise.all([
     import("express"),
     import("cors"),
   ]);
 
   const app = express();
-  app.use(cors({ origin: "*" }));
+  app.use(corsModule({ origin: "*" }));
   app.use(express.json());
 
   app.post("/run", async (req, res) => {
@@ -189,7 +309,7 @@ if (PORT) {
         response: result,
         payments: paymentLog.map((p) => ({
           amount: (Number(p.amount) / 1_000_000).toFixed(2) + " USDT",
-          service: p.service,
+          service: p.serviceName ?? p.service,
           timestamp: p.timestamp,
         })),
       });
@@ -200,11 +320,47 @@ if (PORT) {
     }
   });
 
-  app.get("/health", (_req, res) => {
-    res.json({
-      status: "ok",
-      wallet: agentWallet.address.toString(),
+  app.post("/run/stream", async (req, res) => {
+    const { prompt } = req.body;
+    if (!prompt) {
+      res.status(400).json({ error: "prompt is required" });
+      return;
+    }
+
+    console.log(`\n[HTTP/SSE] Agent streaming: "${prompt}"`);
+
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "Access-Control-Allow-Origin": "*",
     });
+
+    const sendEvent = (type: string, data: unknown) => {
+      res.write(`data: ${JSON.stringify({ type, ...data as Record<string, unknown> })}\n\n`);
+    };
+
+    try {
+      const result = await runAgentWithEvents(prompt, sendEvent);
+      sendEvent("done", {
+        response: result,
+        payments: paymentLog.map((p) => ({
+          amount: (Number(p.amount) / 1_000_000).toFixed(2) + " USDT",
+          service: p.serviceName ?? p.service,
+          timestamp: p.timestamp,
+        })),
+      });
+    } catch (err) {
+      sendEvent("error", {
+        message: err instanceof Error ? err.message : "Agent failed",
+      });
+    }
+
+    res.end();
+  });
+
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", wallet: agentWallet.address.toString() });
   });
 
   app.listen(PORT, () => {
@@ -212,7 +368,6 @@ if (PORT) {
     console.log(`POST /run { "prompt": "..." }`);
   });
 } else {
-  // CLI mode
   const userInput = process.argv.slice(2).join(" ");
   if (userInput) {
     console.log(`\nAgent processing: "${userInput}"\n`);
@@ -223,12 +378,12 @@ if (PORT) {
         console.log("\n--- Payment Log ---");
         paymentLog.forEach((p) => {
           const amount = (Number(p.amount) / 1_000_000).toFixed(2);
-          console.log(`  ${amount} USDT → ${p.service}`);
+          console.log(`  ${amount} USDT -> ${p.serviceName ?? p.service}`);
         });
       })
       .catch(console.error);
   } else {
-    console.log('Usage: tsx src/agent.ts "Get me the weather in Paris"');
-    console.log("Or set AGENT_PORT=3003 to run as HTTP server");
+    console.log('Usage: tsx src/agent.ts "Get me the weather in Paris and translate it to French"');
+    console.log("Or set AGENT_PORT=4001 to run as HTTP server");
   }
 }
