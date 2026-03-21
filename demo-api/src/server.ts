@@ -131,10 +131,11 @@ function paymentRequired(amount: number): express.RequestHandler {
         }),
       });
 
-      if (!settleResponse.ok) {
-        const body = await settleResponse.text();
+      const settleResult = await settleResponse.json();
+
+      if (!settleResponse.ok || !settleResult.success) {
         console.error(
-          `Facilitator settlement failed (${settleResponse.status}): ${body}`,
+          `Facilitator settlement failed: ${JSON.stringify(settleResult)}`,
         );
 
         const requirements = buildPaymentRequirements(amount);
@@ -148,14 +149,18 @@ function paymentRequired(amount: number): express.RequestHandler {
           .set("X-PAYMENT-REQUIRED", encoded)
           .json({
             error: "Payment settlement failed",
-            message: "The facilitator could not settle the payment.",
-            details: body,
+            message: settleResult.errorReason ?? "Settlement rejected",
             requirements,
           });
         return;
       }
 
-      // Settlement succeeded — continue to the route handler
+      // Settlement succeeded — attach payment info and continue
+      (req as any).x402 = {
+        payer: settleResult.payer,
+        transaction: settleResult.transaction,
+        network: settleResult.network,
+      };
       next();
     } catch (err) {
       console.error("Error contacting facilitator:", err);
