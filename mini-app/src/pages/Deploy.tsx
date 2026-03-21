@@ -25,7 +25,7 @@ export default function Deploy() {
   const [method, setMethod] = useState<"GET" | "POST">("GET");
   const [price, setPrice] = useState("0.10");
   const [tags, setTags] = useState<string[]>([]);
-  const [ensName, setEnsName] = useState("");
+  const [deployedEnsName, setDeployedEnsName] = useState("");
 
   const [deploying, setDeploying] = useState(false);
   const [deployed, setDeployed] = useState(false);
@@ -66,7 +66,7 @@ export default function Deploy() {
       const priceUSDT = String(Math.round(priceNum * 1_000_000));
       const ownerAddr = address.includes(":") ? address : "0:" + address;
 
-      await register({
+      const result = await register({
         name,
         code: code.trim() || undefined,
         endpoint: endpoint.trim() || undefined,
@@ -75,9 +75,9 @@ export default function Deploy() {
         tags,
         priceUSDT,
         ownerAddress: ownerAddr,
-        ensName: ensName || undefined,
       });
 
+      setDeployedEnsName(result?.ensName || "");
       setDeployed(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -103,6 +103,12 @@ export default function Deploy() {
           <p className="text-sm text-[var(--color-hint)] max-w-xs mx-auto">
             <strong>{name}</strong> is now on the marketplace. Agents can discover and pay for it automatically.
           </p>
+          {deployedEnsName && (
+            <div className="px-4 py-2 rounded-lg bg-purple-500/10 inline-block">
+              <p className="text-xs text-purple-400 font-mono">{deployedEnsName}</p>
+              <p className="text-[10px] text-[var(--color-hint)] mt-0.5">ENS identity registered on Sepolia</p>
+            </div>
+          )}
           <button
             onClick={() => {
               setDeployed(false);
@@ -112,7 +118,7 @@ export default function Deploy() {
               setEndpoint("");
               setPrice("0.10");
               setTags([]);
-              setEnsName("");
+              setDeployedEnsName("");
             }}
             className="px-6 py-3 rounded-xl text-white font-semibold text-sm"
             style={{ backgroundColor: "var(--color-primary)" }}
@@ -288,19 +294,6 @@ export default function Deploy() {
             </div>
           </div>
 
-          {/* ENS Name */}
-          <div>
-            <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider mb-1">
-              ENS Name (optional)
-            </label>
-            <input
-              type="text"
-              value={ensName}
-              onChange={(e) => setEnsName(e.target.value)}
-              placeholder="mydvm.vendton.eth"
-              className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
-            />
-          </div>
 
           {/* Error */}
           <AnimatePresence>
