@@ -17,7 +17,8 @@ function rowToSkill(row: Record<string, unknown>): SkillRegistration {
     id: row.id as string,
     name: row.name as string,
     slug: row.slug as string,
-    endpoint: row.endpoint as string,
+    endpoint: (row.endpoint as string) || undefined,
+    code: (row.code as string) || undefined,
     method: row.method as "GET" | "POST",
     description: row.description as string,
     tags: JSON.parse(row.tags as string),
@@ -37,8 +38,8 @@ function rowToSkill(row: Record<string, unknown>): SkillRegistration {
 class SkillRegistry {
   // Prepared statements
   private insertStmt = db.prepare(`
-    INSERT INTO skills (id, name, slug, endpoint, method, description, tags, price_usdt, price_readable, owner_address, ens_name, created_at, call_count, total_revenue, status, input_schema, output_example)
-    VALUES (@id, @name, @slug, @endpoint, @method, @description, @tags, @price_usdt, @price_readable, @owner_address, @ens_name, @created_at, @call_count, @total_revenue, @status, @input_schema, @output_example)
+    INSERT INTO skills (id, name, slug, endpoint, code, method, description, tags, price_usdt, price_readable, owner_address, ens_name, created_at, call_count, total_revenue, status, input_schema, output_example)
+    VALUES (@id, @name, @slug, @endpoint, @code, @method, @description, @tags, @price_usdt, @price_readable, @owner_address, @ens_name, @created_at, @call_count, @total_revenue, @status, @input_schema, @output_example)
   `);
 
   private getByIdStmt = db.prepare(`SELECT * FROM skills WHERE id = ?`);
@@ -51,7 +52,8 @@ class SkillRegistry {
 
   register(input: {
     name: string;
-    endpoint: string;
+    endpoint?: string;
+    code?: string;
     method: "GET" | "POST";
     description: string;
     tags: string[];
@@ -71,6 +73,7 @@ class SkillRegistry {
       slug,
       name: input.name,
       endpoint: input.endpoint,
+      code: input.code,
       method: input.method,
       description: input.description,
       tags: input.tags,
@@ -90,7 +93,8 @@ class SkillRegistry {
       id: skill.id,
       name: skill.name,
       slug: skill.slug,
-      endpoint: skill.endpoint,
+      endpoint: skill.endpoint ?? null,
+      code: skill.code ?? null,
       method: skill.method,
       description: skill.description,
       tags: JSON.stringify(skill.tags),
@@ -213,7 +217,6 @@ class SkillRegistry {
 
     this.register({
       name: "Weather API",
-      endpoint: "__BUILTIN__",
       method: "GET",
       description: "Real-time weather data for any major city worldwide. Returns temperature, conditions, humidity, and wind speed.",
       tags: ["weather", "data", "geolocation"],
@@ -222,11 +225,24 @@ class SkillRegistry {
       ensName: "weather.mesh402.eth",
       inputSchema: { type: "object", properties: { city: { type: "string", description: "City name (e.g. Paris, Tokyo, London)" } }, required: ["city"] },
       outputExample: { city: "Paris", temperature: 22, condition: "Sunny", humidity: 45, wind: "12 km/h" },
+      code: `const city = input.city || input.q || "London";
+const res = await fetch(\`https://wttr.in/\${encodeURIComponent(city)}?format=j1\`);
+if (!res.ok) throw new Error(\`wttr.in returned \${res.status}\`);
+const data = await res.json();
+const current = data.current_condition[0];
+return {
+  city,
+  temperature: parseInt(current.temp_C),
+  feelsLike: parseInt(current.FeelsLikeC),
+  condition: current.weatherDesc[0].value,
+  humidity: parseInt(current.humidity),
+  windSpeed: current.windspeedKmph + " km/h",
+  source: "wttr.in"
+};`,
     });
 
     this.register({
       name: "Joke Generator",
-      endpoint: "__BUILTIN__",
       method: "GET",
       description: "Random programming and crypto jokes. Perfect for entertainment or chatbot integrations.",
       tags: ["entertainment", "jokes", "fun"],
@@ -234,11 +250,21 @@ class SkillRegistry {
       ownerAddress: defaultOwner,
       ensName: "jokes.mesh402.eth",
       outputExample: { joke: "Why do programmers prefer dark mode? Because light attracts bugs." },
+      code: `const jokes = [
+  { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs." },
+  { setup: "Why did the blockchain developer go broke?", punchline: "He lost his private key." },
+  { setup: "What's a smart contract's favorite food?", punchline: "Gas fees." },
+  { setup: "Why don't Bitcoin holders ever get cold?", punchline: "They're always holding." },
+  { setup: "How does a TON validator relax?", punchline: "By staking out a good spot." },
+  { setup: "Why did the API go to therapy?", punchline: "Too many broken promises." },
+  { setup: "What do you call a mass of Telegram users?", punchline: "A ton of messages." },
+  { setup: "Why is USDT's favorite dance the waltz?", punchline: "It always stays stable." },
+];
+return jokes[Math.floor(Math.random() * jokes.length)];`,
     });
 
     this.register({
       name: "Translation Service",
-      endpoint: "__BUILTIN__",
       method: "POST",
       description: "Translate text between languages. Supports French, German, Spanish, and Japanese.",
       tags: ["translation", "language", "ai", "text"],
@@ -247,11 +273,25 @@ class SkillRegistry {
       ensName: "translate.mesh402.eth",
       inputSchema: { type: "object", properties: { text: { type: "string" }, targetLanguage: { type: "string", enum: ["fr", "de", "es", "ja"] } }, required: ["text", "targetLanguage"] },
       outputExample: { original: "Hello, how are you?", translated: "Bonjour, comment allez-vous?", language: "French" },
+      code: `const text = input.text || input.q || "";
+const lang = (input.lang || input.language || "fr").toLowerCase();
+if (!text) throw new Error("Missing 'text' parameter");
+const langNames = { fr: "French", de: "German", es: "Spanish", ja: "Japanese" };
+const langName = langNames[lang] || lang;
+const dict = {
+  fr: { hello: "bonjour", goodbye: "au revoir", "thank you": "merci", yes: "oui", no: "non", weather: "m\\u00e9t\\u00e9o", blockchain: "cha\\u00eene de blocs" },
+  de: { hello: "hallo", goodbye: "auf wiedersehen", "thank you": "danke", yes: "ja", no: "nein", weather: "Wetter", blockchain: "Blockchain" },
+  es: { hello: "hola", goodbye: "adi\\u00f3s", "thank you": "gracias", yes: "s\\u00ed", no: "no", weather: "clima", blockchain: "cadena de bloques" },
+  ja: { hello: "\\u3053\\u3093\\u306b\\u3061\\u306f", goodbye: "\\u3055\\u3088\\u3046\\u306a\\u3089", "thank you": "\\u3042\\u308a\\u304c\\u3068\\u3046", yes: "\\u306f\\u3044", no: "\\u3044\\u3044\\u3048", weather: "\\u5929\\u6c17", blockchain: "\\u30d6\\u30ed\\u30c3\\u30af\\u30c1\\u30a7\\u30fc\\u30f3" },
+};
+const d = dict[lang] || {};
+const lower = text.toLowerCase();
+if (d[lower]) return { original: text, translated: d[lower], language: langName };
+return { original: text, translated: \`[\${lang.toUpperCase()}] \${text}\`, language: langName, note: "Basic translation — full neural MT in production" };`,
     });
 
     this.register({
       name: "Sentiment Analysis",
-      endpoint: "__BUILTIN__",
       method: "POST",
       description: "Analyze the sentiment of any text. Returns positive, negative, or neutral with confidence score.",
       tags: ["ai", "nlp", "sentiment", "text"],
@@ -260,6 +300,19 @@ class SkillRegistry {
       ensName: "sentiment.mesh402.eth",
       inputSchema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] },
       outputExample: { sentiment: "positive", confidence: 0.92, keywords: ["great", "excellent"] },
+      code: `const text = input.text || input.q || "";
+if (!text) throw new Error("Missing 'text' parameter");
+const positive = ["good","great","excellent","amazing","love","happy","wonderful","fantastic","beautiful","best","awesome","brilliant","perfect","outstanding","superb"];
+const negative = ["bad","terrible","awful","hate","sad","worst","horrible","ugly","poor","disappointing","boring","stupid","broken","useless","annoying"];
+const words = text.toLowerCase().split(/\\W+/);
+let score = 0;
+for (const w of words) {
+  if (positive.includes(w)) score++;
+  if (negative.includes(w)) score--;
+}
+const normalized = words.length > 0 ? score / words.length : 0;
+const sentiment = normalized > 0.1 ? "positive" : normalized < -0.1 ? "negative" : "neutral";
+return { text, sentiment, score: normalized.toFixed(3), wordCount: words.length };`,
     });
 
     const { count: newCount } = this.countStmt.get() as { count: number };

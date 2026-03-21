@@ -15,7 +15,7 @@ import {
 } from "@x402/ton";
 import { config } from "./config.js";
 import { registry } from "./registry.js";
-import { handleBuiltinSkill } from "./builtin-skills.js";
+import { executeSkill } from "./executor.js";
 import { resolveENSToTON, getENSAvatar, getENSDescription } from "./ens.js";
 // TON client
 const tonClient = new TonClient({
@@ -56,7 +56,8 @@ const VerifySettleBodySchema = z.object({
 
 const RegisterSkillSchema = z.object({
   name: z.string().min(1).max(100),
-  endpoint: z.string().min(1),
+  endpoint: z.string().optional(),
+  code: z.string().optional(),
   method: z.enum(["GET", "POST"]),
   description: z.string().min(1).max(500),
   tags: z.array(z.string()).min(1).max(10),
@@ -65,6 +66,8 @@ const RegisterSkillSchema = z.object({
   ensName: z.string().optional(),
   inputSchema: z.record(z.unknown()).optional(),
   outputExample: z.record(z.unknown()).optional(),
+}).refine((data) => data.endpoint || data.code, {
+  message: "Either 'endpoint' or 'code' must be provided",
 });
 
 // Verify and settle via SDK, with WebSocket broadcast on settlement
@@ -222,12 +225,20 @@ app.all("/proxy/:skillId", async (req: Request, res: Response) => {
     registry.incrementCalls(skill.id, skill.priceUSDT);
     broadcastEvent({ type: "skill_called", skillId: skill.id, skillName: skill.name, payer: result.payer, amount: skill.priceUSDT, transaction: result.transaction, timestamp: Date.now() });
 
-    // Handle built-in or external skill
-    if (skill.endpoint === "__BUILTIN__") {
-      const data = await handleBuiltinSkill(skill.slug, req);
-      res.json({ data, payment: { amount: skill.priceReadable, transaction: result.transaction } });
-    } else {
-      // Forward to external endpoint
+    // Execute code-based skill
+    if (skill.code) {
+      const input = { ...req.query, ...(req.body || {}) };
+      const execResult = await executeSkill(skill.code, input as Record<string, unknown>);
+      if (!execResult.success) {
+        res.status(500).json({ error: "Skill execution failed", message: execResult.error, durationMs: execResult.durationMs });
+        return;
+      }
+      res.json({ data: execResult.data, skill: { id: skill.id, name: skill.name }, durationMs: execResult.durationMs, paidAmount: skill.priceReadable, payment: { amount: skill.priceReadable, transaction: result.transaction } });
+      return;
+    }
+
+    // Forward to external endpoint
+    if (skill.endpoint) {
       try {
         const fetchOptions: RequestInit = { method: skill.method, headers: { "Content-Type": "application/json" } };
         if (skill.method === "POST" && req.body) fetchOptions.body = JSON.stringify(req.body);
@@ -245,7 +256,10 @@ app.all("/proxy/:skillId", async (req: Request, res: Response) => {
       } catch (error) {
         res.json({ error: "Skill call failed", message: error instanceof Error ? error.message : String(error), payment: { amount: skill.priceReadable, transaction: result.transaction } });
       }
+      return;
     }
+
+    res.status(500).json({ error: "Skill has no code or endpoint configured" });
   } catch (err) {
     res.status(502).json({ error: "Payment processing error", message: err instanceof Error ? err.message : String(err) });
   }

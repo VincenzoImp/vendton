@@ -1,19 +1,28 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PlusCircle, CheckCircle2, Loader2, AlertTriangle, Rocket } from "lucide-react";
+import { PlusCircle, CheckCircle2, Loader2, AlertTriangle, Rocket, Code2, Globe } from "lucide-react";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useSkills } from "../hooks/useSkills";
 
 const AVAILABLE_TAGS = ["weather", "data", "ai", "nlp", "translation", "entertainment", "sentiment", "text", "finance", "health", "image"];
+
+const CODE_PLACEHOLDER = `// Your skill receives 'input' with query params and body
+// Return any JSON — callers pay your price per call
+
+const city = input.city || "London";
+const res = await fetch(\`https://wttr.in/\${city}?format=j1\`);
+const data = await res.json();
+return { city, temp: data.current_condition[0].temp_C };`;
 
 export default function Deploy() {
   const { connected, connect, address } = useTonConnect();
   const { register } = useSkills();
 
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [code, setCode] = useState("");
   const [endpoint, setEndpoint] = useState("");
   const [method, setMethod] = useState<"GET" | "POST">("GET");
-  const [description, setDescription] = useState("");
   const [price, setPrice] = useState("0.10");
   const [tags, setTags] = useState<string[]>([]);
   const [ensName, setEnsName] = useState("");
@@ -39,6 +48,11 @@ export default function Deploy() {
       return;
     }
 
+    if (!code.trim() && !endpoint.trim()) {
+      setError("Provide either skill code or an external API URL");
+      return;
+    }
+
     setDeploying(true);
     setError("");
 
@@ -54,7 +68,8 @@ export default function Deploy() {
 
       await register({
         name,
-        endpoint: endpoint || "__BUILTIN__",
+        code: code.trim() || undefined,
+        endpoint: endpoint.trim() || undefined,
         method,
         description,
         tags,
@@ -93,8 +108,9 @@ export default function Deploy() {
             onClick={() => {
               setDeployed(false);
               setName("");
-              setEndpoint("");
               setDescription("");
+              setCode("");
+              setEndpoint("");
               setPrice("0.10");
               setTags([]);
               setEnsName("");
@@ -121,7 +137,7 @@ export default function Deploy() {
             Deploy Skill
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Publish your API as a skill and get paid in USDT
+            Vercel for paid API endpoints — write code, set a price, earn USDT
           </p>
         </div>
       </section>
@@ -166,18 +182,52 @@ export default function Deploy() {
             />
           </div>
 
-          {/* Endpoint */}
+          {/* Code Section */}
           <div>
-            <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider mb-1">
-              API Endpoint (leave empty for demo)
-            </label>
+            <div className="flex items-center gap-2 mb-1">
+              <Code2 className="w-3.5 h-3.5 text-green-400" />
+              <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
+                Skill Code (JavaScript)
+              </label>
+            </div>
+            <textarea
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder={CODE_PLACEHOLDER}
+              rows={8}
+              className="w-full px-4 py-3 rounded-xl text-sm font-mono bg-gray-900 text-green-400 placeholder:text-gray-600 outline-none resize-none leading-relaxed"
+              spellCheck={false}
+            />
+            <p className="text-[10px] text-[var(--color-hint)] mt-1">
+              Your code runs serverlessly. Use <code className="text-green-400/70">input</code> for parameters, <code className="text-green-400/70">fetch</code> for HTTP calls. Return JSON.
+            </p>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[var(--color-secondary-bg)]" />
+            <span className="text-[10px] font-semibold text-[var(--color-hint)] uppercase tracking-widest">or</span>
+            <div className="flex-1 h-px bg-[var(--color-secondary-bg)]" />
+          </div>
+
+          {/* External URL */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Globe className="w-3.5 h-3.5 text-blue-400" />
+              <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
+                Or paste an external API URL
+              </label>
+            </div>
             <input
               type="text"
               value={endpoint}
               onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="https://api.example.com/skill"
+              placeholder="https://api.example.com/endpoint"
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
+            <p className="text-[10px] text-[var(--color-hint)] mt-1">
+              Leave empty if you wrote code above
+            </p>
           </div>
 
           {/* Method + Price */}

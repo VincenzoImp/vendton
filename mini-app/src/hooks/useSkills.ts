@@ -37,7 +37,8 @@ interface UseSkillsReturn {
 
 interface RegisterSkillInput {
   name: string;
-  endpoint: string;
+  code?: string;
+  endpoint?: string;
   method: "GET" | "POST";
   description: string;
   tags: string[];

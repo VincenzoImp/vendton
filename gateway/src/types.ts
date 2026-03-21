@@ -2,7 +2,8 @@ export interface SkillRegistration {
   id: string;
   name: string;
   slug: string;
-  endpoint: string;
+  endpoint?: string;
+  code?: string;
   method: "GET" | "POST";
   description: string;
   tags: string[];
