@@ -53,4 +53,3 @@ coverage/
 tmp/
 .tmp/
 mini-app/tsconfig.tsbuildinfo
-package-lock.json
