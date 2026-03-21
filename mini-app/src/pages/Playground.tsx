@@ -13,10 +13,9 @@ const AGENT_URL =
     : "https://vendton-agent.up.railway.app");
 
 const PRESET_PROMPTS = [
-  "Get me the weather in Paris and translate it to French",
-  "Analyze the sentiment of: TON blockchain is amazing!",
-  "Tell me a joke and translate it to Spanish",
-  "What's the weather like in Tokyo?",
+  "What's the weather like in Lausanne right now?",
+  "What's the current price of Bitcoin?",
+  "Get the weather in Lausanne and the price of Bitcoin, then add the temperature in Celsius to the price in USD",
 ];
 
 export default function Playground() {

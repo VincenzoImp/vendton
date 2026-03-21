@@ -17,6 +17,7 @@ import { config } from "./config.js";
 import { registry } from "./registry.js";
 import { executeDVM } from "./executor.js";
 import { resolveENSToTON, getENSAvatar, getENSDescription } from "./ens.js";
+import { createDVMSubname } from "./ens-writer.js";
 // TON client
 const tonClient = new TonClient({
   endpoint: config.tonRpcUrl,
@@ -133,6 +134,29 @@ app.post("/api/dvms/register", (req: Request, res: Response) => {
   broadcastEvent({ type: "dvm_registered", dvmId: dvm.id, dvmName: dvm.name, timestamp: Date.now() });
   console.log(`[registry] New DVM: ${dvm.name} (${dvm.id}) at ${dvm.priceReadable}`);
   res.status(201).json({ success: true, dvm });
+
+  // Fire and forget — create real ENS subdomain on Sepolia without blocking the response
+  const ensName = dvm.ensName;
+  if (ensName && ensName.endsWith(".vendton.eth")) {
+    const parts = ensName.split(".");
+    // parts = ["weather", "eqawwaqaaz", "vendton", "eth"]
+    const label = parts[0];
+    const parentName = parts.slice(1).join(".");  // "eqawwaqaaz.vendton.eth"
+
+    createDVMSubname({
+      label,
+      parentName,
+      tonAddress: dvm.ownerAddress,
+      description: dvm.description,
+    }).then(result => {
+      if (result.success) {
+        console.log(`[ens] Subdomain registered on-chain: ${result.ensName}`);
+        broadcastEvent({ type: "ens_registered", ensName: result.ensName, txHash: result.txHash, timestamp: Date.now() });
+      } else {
+        console.error(`[ens] Subdomain failed: ${result.error}`);
+      }
+    });
+  }
 });
 
 app.get("/api/dvms", (req: Request, res: Response) => {
@@ -162,11 +186,12 @@ app.get("/api/dvms/:id", (req: Request, res: Response) => {
 
 // === Proxy Route — the x402 gateway ===
 
-app.all("/proxy/:dvmId", async (req: Request, res: Response) => {
-  const dvmId = req.params.dvmId as string;
-  const dvm = registry.get(dvmId) ?? registry.getBySlug(dvmId);
+app.all("/dvm/:owner/:name", async (req: Request, res: Response) => {
+  const { owner, name } = req.params as { owner: string; name: string };
+
+  const dvm = registry.getByOwnerAndSlug(owner, name);
   if (!dvm) {
-    res.status(404).json({ error: "DVM not found" });
+    res.status(404).json({ error: "DVM not found", owner, name });
     return;
   }
 
@@ -263,6 +288,23 @@ app.all("/proxy/:dvmId", async (req: Request, res: Response) => {
   } catch (err) {
     res.status(502).json({ error: "Payment processing error", message: err instanceof Error ? err.message : String(err) });
   }
+});
+
+// === Legacy proxy route (fallback for agent compatibility) ===
+
+app.all("/proxy/:dvmId", async (req: Request, res: Response) => {
+  const dvmId = req.params.dvmId as string;
+  const dvm = registry.get(dvmId) ?? registry.getBySlug(dvmId);
+  if (!dvm) {
+    res.status(404).json({ error: "DVM not found" });
+    return;
+  }
+
+  // Redirect to the canonical /dvm/:owner/:name route
+  const ownerShort = dvm.ownerAddress.replace(/^0:/, "").slice(0, 8).toLowerCase();
+  const newPath = `/dvm/${ownerShort}/${dvm.slug}`;
+  const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+  res.redirect(307, newPath + qs);
 });
 
 // === Facilitator Routes ===
@@ -363,7 +405,8 @@ server.listen(config.port, () => {
   console.log(`  POST /api/dvms/register          Register a new DVM`);
   console.log(`  GET  /api/dvms                   Search & browse DVMs`);
   console.log(`  GET  /api/dvms/:id               Get DVM details`);
-  console.log(`  ALL  /proxy/:dvmId               Call DVM (x402 gated)`);
+  console.log(`  ALL  /dvm/:owner/:name            Call DVM (x402 gated)`);
+  console.log(`  ALL  /proxy/:dvmId               Legacy proxy (redirects)`);
   console.log(`  POST /verify                    Verify payment`);
   console.log(`  POST /settle                    Settle payment`);
   console.log(`  GET  /supported                 Supported schemes`);

@@ -20,7 +20,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@ensdomains/ensjs": "^4.2.2"
+  },
   "overrides": {
     "@ton/core": "^0.62.0"
   }

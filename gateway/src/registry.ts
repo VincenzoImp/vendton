@@ -210,74 +210,16 @@ class DVMRegistry {
   }
 
   seed(): void {
-    // Only seed if the table is empty
     const { count } = this.countStmt.get() as { count: number };
-    if (count > 0) {
-      console.log(`Registry already has ${count} DVMs, skipping seed`);
-      return;
-    }
+    console.log(`Registry has ${count} DVMs`);
+  }
 
-    const defaultOwner = process.env.DEFAULT_OWNER_ADDRESS ?? "EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD";
-
-    this.register({
-      name: "Weather Data",
-      method: "GET",
-      description: "Real-time weather data for any city worldwide. Returns temperature, humidity, wind, visibility, UV index.",
-      tags: ["weather", "data", "geolocation"],
-      priceUSDT: "100000",
-      ownerAddress: defaultOwner,
-      ensName: "weather.eqawwaqaaz.vendton.eth",
-      inputSchema: { type: "object", properties: { city: { type: "string", description: "City name (e.g. Paris, Tokyo, London)" } }, required: ["city"] },
-      outputExample: { city: "Paris", temperature: 22, feelsLike: 20, condition: "Sunny", humidity: "45%", wind: "12 km/h NW", visibility: "10 km", uvIndex: "3" },
-      code: `const city = input.city || input.q || "London";
-const res = await fetch(\`https://wttr.in/\${encodeURIComponent(city)}?format=j1\`);
-if (!res.ok) throw new Error("Weather service unavailable");
-const data = await res.json();
-const c = data.current_condition[0];
-return {
-  city,
-  temperature: parseInt(c.temp_C),
-  feelsLike: parseInt(c.FeelsLikeC),
-  condition: c.weatherDesc[0].value,
-  humidity: parseInt(c.humidity) + "%",
-  wind: c.windspeedKmph + " km/h " + c.winddir16Point,
-  visibility: c.visibility + " km",
-  uvIndex: c.uvIndex,
-  source: "wttr.in",
-  timestamp: new Date().toISOString()
-};`,
+  getByOwnerAndSlug(ownerPrefix: string, slug: string): DVMRegistration | undefined {
+    const all = this.getAll();
+    return all.find(d => {
+      const short = d.ownerAddress.replace(/^0:/, "").slice(0, 8).toLowerCase();
+      return short === ownerPrefix.toLowerCase() && d.slug === slug;
     });
-
-    this.register({
-      name: "Crypto Price",
-      method: "GET",
-      description: "Real-time cryptocurrency prices in USD, EUR, BTC with 24h change and market cap. Supports thousands of coins.",
-      tags: ["crypto", "data", "finance"],
-      priceUSDT: "50000",
-      ownerAddress: defaultOwner,
-      ensName: "crypto-price.eqawwaqaaz.vendton.eth",
-      inputSchema: { type: "object", properties: { coin: { type: "string", description: "Coin ID (e.g. bitcoin, ethereum, the-open-network)" } }, required: ["coin"] },
-      outputExample: { coin: "bitcoin", price_usd: 67000, price_eur: 62000, price_btc: 1, change_24h: "2.50%", market_cap_usd: 1300000000000 },
-      code: `const coin = (input.coin || input.q || "bitcoin").toLowerCase();
-const res = await fetch(\`https://api.coingecko.com/api/v3/simple/price?ids=\${encodeURIComponent(coin)}&vs_currencies=usd,eur,btc&include_24hr_change=true&include_market_cap=true\`);
-if (!res.ok) throw new Error("Price service unavailable");
-const data = await res.json();
-const info = data[coin];
-if (!info) throw new Error(\`Coin '\${coin}' not found. Try: bitcoin, ethereum, the-open-network\`);
-return {
-  coin,
-  price_usd: info.usd,
-  price_eur: info.eur,
-  price_btc: info.btc,
-  change_24h: (info.usd_24h_change || 0).toFixed(2) + "%",
-  market_cap_usd: info.usd_market_cap,
-  source: "coingecko",
-  timestamp: new Date().toISOString()
-};`,
-    });
-
-    const { count: newCount } = this.countStmt.get() as { count: number };
-    console.log(`Registry seeded with ${newCount} DVMs`);
   }
 }
 

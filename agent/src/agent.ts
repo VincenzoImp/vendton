@@ -75,16 +75,23 @@ async function handleToolCall(
       const params = input.params as Record<string, unknown> | undefined;
 
       try {
-        let url = `${GATEWAY_URL}/proxy/${dvmId}`;
-        let method = "GET";
-        let body: string | undefined;
-
-        // First get DVM details to determine method
+        // Get DVM details to determine method and build canonical URL
         const infoRes = await fetch(`${GATEWAY_URL}/api/dvms/${dvmId}`);
+        let method = "GET";
+        let url: string;
+
         if (infoRes.ok) {
           const info = await infoRes.json();
           method = info.dvm?.method ?? "GET";
+          const slug = info.dvm?.slug || dvmId;
+          const ownerShort = info.dvm?.ownerAddress?.replace(/^0:/, "").slice(0, 8).toLowerCase() || "unknown";
+          url = `${GATEWAY_URL}/dvm/${ownerShort}/${slug}`;
+        } else {
+          // Fallback to legacy proxy route
+          url = `${GATEWAY_URL}/proxy/${dvmId}`;
         }
+
+        let body: string | undefined;
 
         if (method === "GET" && params) {
           const queryParams = new URLSearchParams();
