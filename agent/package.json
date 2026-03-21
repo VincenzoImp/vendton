@@ -13,9 +13,13 @@
     "@ton/core": "^0.60.0",
     "@ton/crypto": "^3.3.0",
     "@ton/ton": "^15.0.0",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "express": "^4.21.0",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }

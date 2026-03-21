@@ -162,21 +162,72 @@ export async function runAgent(userMessage: string): Promise<string> {
   }
 }
 
-// CLI mode
-const userInput = process.argv.slice(2).join(" ");
-if (userInput) {
-  console.log(`\nAgent processing: "${userInput}"\n`);
-  runAgent(userInput)
-    .then((result) => {
-      console.log("\n--- Agent Response ---");
-      console.log(result);
-      console.log("\n--- Payment Log ---");
-      paymentLog.forEach((p) => {
-        const amount = (Number(p.amount) / 1_000_000).toFixed(2);
-        console.log(`  ${amount} USDT → ${p.service}`);
+// HTTP server mode (when PORT is set) or CLI mode
+const PORT = process.env.AGENT_PORT ? parseInt(process.env.AGENT_PORT) : null;
+
+if (PORT) {
+  // HTTP server — the mini-app AgentDemo page can POST prompts
+  import("express").then(({ default: express }) => {
+    import("cors").then(({ default: cors }) => {
+      const app = express();
+      app.use(cors({ origin: "*" }));
+      app.use(express.json());
+
+      app.post("/run", async (req, res) => {
+        const { prompt } = req.body;
+        if (!prompt) {
+          res.status(400).json({ error: "prompt is required" });
+          return;
+        }
+        console.log(`\n[HTTP] Agent processing: "${prompt}"`);
+        try {
+          const result = await runAgent(prompt);
+          res.json({
+            response: result,
+            payments: paymentLog.map((p) => ({
+              amount: (Number(p.amount) / 1_000_000).toFixed(2) + " USDT",
+              service: p.service,
+              timestamp: p.timestamp,
+            })),
+          });
+        } catch (err) {
+          res.status(500).json({
+            error: err instanceof Error ? err.message : "Agent failed",
+          });
+        }
       });
-    })
-    .catch(console.error);
+
+      app.get("/health", (_req, res) => {
+        res.json({
+          status: "ok",
+          wallet: agentWallet.address.toString(),
+        });
+      });
+
+      app.listen(PORT, () => {
+        console.log(`Agent HTTP server on port ${PORT}`);
+        console.log(`POST /run { "prompt": "..." }`);
+      });
+    });
+  });
 } else {
-  console.log('Usage: tsx src/agent.ts "Get me the weather in Paris"');
+  // CLI mode
+  const userInput = process.argv.slice(2).join(" ");
+  if (userInput) {
+    console.log(`\nAgent processing: "${userInput}"\n`);
+    runAgent(userInput)
+      .then((result) => {
+        console.log("\n--- Agent Response ---");
+        console.log(result);
+        console.log("\n--- Payment Log ---");
+        paymentLog.forEach((p) => {
+          const amount = (Number(p.amount) / 1_000_000).toFixed(2);
+          console.log(`  ${amount} USDT → ${p.service}`);
+        });
+      })
+      .catch(console.error);
+  } else {
+    console.log('Usage: tsx src/agent.ts "Get me the weather in Paris"');
+    console.log("Or set AGENT_PORT=3003 to run as HTTP server");
+  }
 }
