@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 export interface SettlementEvent {
   type: string;
-  serviceId?: string;
-  serviceName?: string;
+  skillId?: string;
+  skillName?: string;
   payer: string;
   amount: string;
   asset?: string;
@@ -58,8 +58,8 @@ export function useWebSocket(): UseWebSocketReturn {
           if (data.type === "settlement" || data.type === "service_called") {
             const settlement: SettlementEvent = {
               type: data.type,
-              serviceId: data.serviceId || "",
-              serviceName: data.serviceName || "",
+              skillId: data.skillId || data.serviceId || "",
+              skillName: data.skillName || data.serviceName || "",
               payer: data.payer || "",
               amount: data.amount || "",
               asset: data.asset || "",

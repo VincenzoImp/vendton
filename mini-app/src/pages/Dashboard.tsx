@@ -4,20 +4,20 @@ import { BarChart3, TrendingUp, Wallet, Activity, Wifi, WifiOff, ArrowDownLeft, 
 import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { useRegistry } from "../hooks/useRegistry";
+import { useSkills } from "../hooks/useSkills";
 
 type Tab = "spending" | "revenue";
 
 export default function Dashboard() {
   const { connected, shortAddress, address } = useTonConnect();
   const { events, isConnected } = useWebSocket();
-  const { services } = useRegistry();
+  const { skills } = useSkills();
   const [activeTab, setActiveTab] = useState<Tab>("spending");
 
   const transactions: Transaction[] = useMemo(() => {
     return events.map((evt, i) => ({
       id: `${evt.transaction}-${i}`,
-      service: evt.serviceName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
+      service: evt.skillName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
       amount: `${(Number(evt.amount) / 1_000_000).toFixed(2)} USDT`,
       status: "confirmed" as const,
       timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
@@ -34,21 +34,21 @@ export default function Dashboard() {
       .toFixed(2);
   }, [transactions]);
 
-  const ownedServices = useMemo(() => {
+  const ownedSkills = useMemo(() => {
     if (!address) return [];
     const ownerAddr = address.includes(":") ? address : "0:" + address;
-    return services.filter((s) => s.ownerAddress === ownerAddr);
-  }, [services, address]);
+    return skills.filter((s) => s.ownerAddress === ownerAddr);
+  }, [skills, address]);
 
   const totalRevenue = useMemo(() => {
-    return ownedServices
+    return ownedSkills
       .reduce((sum, s) => sum + Number(s.totalRevenue) / 1_000_000, 0)
       .toFixed(2);
-  }, [ownedServices]);
+  }, [ownedSkills]);
 
   const totalCalls = useMemo(() => {
-    return ownedServices.reduce((sum, s) => sum + s.callCount, 0);
-  }, [ownedServices]);
+    return ownedSkills.reduce((sum, s) => sum + s.callCount, 0);
+  }, [ownedSkills]);
 
   const stats = [
     {
@@ -66,10 +66,10 @@ export default function Dashboard() {
     },
     {
       icon: TrendingUp,
-      label: activeTab === "spending" ? "Success Rate" : "Services",
+      label: activeTab === "spending" ? "Success Rate" : "Skills",
       value: activeTab === "spending"
         ? transactions.length > 0 ? "100%" : "--"
-        : String(ownedServices.length),
+        : String(ownedSkills.length),
       color: "#10B981",
     },
   ];
@@ -160,17 +160,17 @@ export default function Dashboard() {
       {activeTab === "revenue" && (
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-            Your Services
+            Your Skills
           </h2>
-          {ownedServices.length === 0 ? (
+          {ownedSkills.length === 0 ? (
             <div className="text-center py-6 text-sm text-[var(--color-hint)]">
               {connected
-                ? "You haven't deployed any services yet."
-                : "Connect wallet to see your services."}
+                ? "You haven't deployed any skills yet."
+                : "Connect wallet to see your skills."}
             </div>
           ) : (
             <div className="space-y-2">
-              {ownedServices.map((s) => (
+              {ownedSkills.map((s) => (
                 <div
                   key={s.id}
                   className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-secondary-bg)]"

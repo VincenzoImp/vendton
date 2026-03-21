@@ -2,11 +2,11 @@ import type Anthropic from "@anthropic-ai/sdk";
 
 export const meshAgentTools: Anthropic.Tool[] = [
   {
-    name: "discover_services",
+    name: "discover_skills",
     description:
-      "Search the mesh402 marketplace for services by capability, tags, or description. " +
-      "Returns matching services with their prices, IDs, and descriptions. " +
-      "Always call this first to find available services before calling them.",
+      "Search the mesh402 marketplace for skills by capability, tags, or description. " +
+      "Returns matching skills with their prices, IDs, and descriptions. " +
+      "Always call this first to find available skills before calling them.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -28,24 +28,24 @@ export const meshAgentTools: Anthropic.Tool[] = [
     },
   },
   {
-    name: "call_service",
+    name: "call_skill",
     description:
-      "Call a mesh402 service by its ID. The payment is handled automatically via the x402 protocol. " +
-      "Pass query parameters as part of the body for GET services, or as JSON body for POST services. " +
-      "Returns the service response data.",
+      "Call a mesh402 skill by its ID. The payment is handled automatically via the x402 protocol. " +
+      "Pass query parameters as part of the body for GET skills, or as JSON body for POST skills. " +
+      "Returns the skill response data.",
     input_schema: {
       type: "object" as const,
       properties: {
-        service_id: {
+        skill_id: {
           type: "string",
-          description: "The service ID from discover_services results",
+          description: "The skill ID from discover_skills results",
         },
         params: {
           type: "object",
-          description: "Parameters to pass to the service (query params for GET, body for POST)",
+          description: "Parameters to pass to the skill (query params for GET, body for POST)",
         },
       },
-      required: ["service_id"],
+      required: ["skill_id"],
     },
   },
   {
@@ -59,8 +59,8 @@ export const meshAgentTools: Anthropic.Tool[] = [
   {
     name: "resolve_ens",
     description:
-      "Resolve an ENS name to find the associated TON address and any services registered under it. " +
-      "Use this when you see .eth names to discover the owner and their services.",
+      "Resolve an ENS name to find the associated TON address and any skills registered under it. " +
+      "Use this when you see .eth names to discover the owner and their skills.",
     input_schema: {
       type: "object" as const,
       properties: {

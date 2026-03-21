@@ -6,7 +6,7 @@ const GATEWAY_URL =
     ? "http://localhost:4000"
     : "https://mesh402-gateway.up.railway.app");
 
-export interface Service {
+export interface Skill {
   id: string;
   name: string;
   slug: string;
@@ -26,16 +26,16 @@ export interface Service {
   outputExample?: Record<string, unknown>;
 }
 
-interface UseRegistryReturn {
-  services: Service[];
+interface UseSkillsReturn {
+  skills: Skill[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
   search: (q: string, tags?: string[]) => void;
-  register: (data: RegisterInput) => Promise<Service>;
+  register: (data: RegisterSkillInput) => Promise<Skill>;
 }
 
-interface RegisterInput {
+interface RegisterSkillInput {
   name: string;
   endpoint: string;
   method: "GET" | "POST";
@@ -46,12 +46,12 @@ interface RegisterInput {
   ensName?: string;
 }
 
-export function useRegistry(): UseRegistryReturn {
-  const [services, setServices] = useState<Service[]>([]);
+export function useSkills(): UseSkillsReturn {
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchServices = useCallback(async (q?: string, tags?: string[]) => {
+  const fetchSkills = useCallback(async (q?: string, tags?: string[]) => {
     setLoading(true);
     setError(null);
     try {
@@ -59,34 +59,34 @@ export function useRegistry(): UseRegistryReturn {
       if (q) params.set("q", q);
       if (tags && tags.length > 0) params.set("tags", tags.join(","));
 
-      const res = await fetch(`${GATEWAY_URL}/api/services?${params}`);
+      const res = await fetch(`${GATEWAY_URL}/api/skills?${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setServices(data.services || []);
+      setSkills(data.skills || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch services");
+      setError(err instanceof Error ? err.message : "Failed to fetch skills");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
+    fetchSkills();
+  }, [fetchSkills]);
 
   const refresh = useCallback(() => {
-    fetchServices();
-  }, [fetchServices]);
+    fetchSkills();
+  }, [fetchSkills]);
 
   const search = useCallback(
     (q: string, tags?: string[]) => {
-      fetchServices(q, tags);
+      fetchSkills(q, tags);
     },
-    [fetchServices],
+    [fetchSkills],
   );
 
-  const register = useCallback(async (data: RegisterInput): Promise<Service> => {
-    const res = await fetch(`${GATEWAY_URL}/api/services/register`, {
+  const register = useCallback(async (data: RegisterSkillInput): Promise<Skill> => {
+    const res = await fetch(`${GATEWAY_URL}/api/skills/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -96,11 +96,11 @@ export function useRegistry(): UseRegistryReturn {
       throw new Error(err.error || `HTTP ${res.status}`);
     }
     const result = await res.json();
-    await fetchServices(); // refresh list
-    return result.service;
-  }, [fetchServices]);
+    await fetchSkills(); // refresh list
+    return result.skill;
+  }, [fetchSkills]);
 
-  return { services, loading, error, refresh, search, register };
+  return { skills, loading, error, refresh, search, register };
 }
 
 export { GATEWAY_URL };

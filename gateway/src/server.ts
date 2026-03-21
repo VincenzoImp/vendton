@@ -15,7 +15,7 @@ import {
 } from "@x402/ton";
 import { config } from "./config.js";
 import { registry } from "./registry.js";
-import { handleBuiltinService } from "./builtin-services.js";
+import { handleBuiltinSkill } from "./builtin-skills.js";
 import { resolveENSToTON, getENSAvatar, getENSDescription } from "./ens.js";
 // TON client
 const tonClient = new TonClient({
@@ -54,7 +54,7 @@ const VerifySettleBodySchema = z.object({
   }),
 });
 
-const RegisterServiceSchema = z.object({
+const RegisterSkillSchema = z.object({
   name: z.string().min(1).max(100),
   endpoint: z.string().min(1),
   method: z.enum(["GET", "POST"]),
@@ -119,20 +119,20 @@ app.use((req, _res, next) => {
 
 // === Registry Routes ===
 
-app.post("/api/services/register", (req: Request, res: Response) => {
-  const parsed = RegisterServiceSchema.safeParse(req.body);
+app.post("/api/skills/register", (req: Request, res: Response) => {
+  const parsed = RegisterSkillSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
     return;
   }
 
-  const service = registry.register(parsed.data);
-  broadcastEvent({ type: "service_registered", serviceId: service.id, serviceName: service.name, timestamp: Date.now() });
-  console.log(`[registry] New service: ${service.name} (${service.id}) at ${service.priceReadable}`);
-  res.status(201).json({ success: true, service });
+  const skill = registry.register(parsed.data);
+  broadcastEvent({ type: "skill_registered", skillId: skill.id, skillName: skill.name, timestamp: Date.now() });
+  console.log(`[registry] New skill: ${skill.name} (${skill.id}) at ${skill.priceReadable}`);
+  res.status(201).json({ success: true, skill });
 });
 
-app.get("/api/services", (req: Request, res: Response) => {
+app.get("/api/skills", (req: Request, res: Response) => {
   const query = {
     q: req.query.q as string | undefined,
     tags: req.query.tags ? (req.query.tags as string).split(",") : undefined,
@@ -147,23 +147,23 @@ app.get("/api/services", (req: Request, res: Response) => {
   res.json(result);
 });
 
-app.get("/api/services/:id", (req: Request, res: Response) => {
+app.get("/api/skills/:id", (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const service = registry.get(id) ?? registry.getBySlug(id);
-  if (!service) {
-    res.status(404).json({ error: "Service not found" });
+  const skill = registry.get(id) ?? registry.getBySlug(id);
+  if (!skill) {
+    res.status(404).json({ error: "Skill not found" });
     return;
   }
-  res.json({ service });
+  res.json({ skill });
 });
 
 // === Proxy Route — the x402 gateway ===
 
-app.all("/proxy/:serviceId", async (req: Request, res: Response) => {
-  const serviceId = req.params.serviceId as string;
-  const service = registry.get(serviceId) ?? registry.getBySlug(serviceId);
-  if (!service) {
-    res.status(404).json({ error: "Service not found" });
+app.all("/proxy/:skillId", async (req: Request, res: Response) => {
+  const skillId = req.params.skillId as string;
+  const skill = registry.get(skillId) ?? registry.getBySlug(skillId);
+  if (!skill) {
+    res.status(404).json({ error: "Skill not found" });
     return;
   }
 
@@ -176,19 +176,19 @@ app.all("/proxy/:serviceId", async (req: Request, res: Response) => {
       accepts: [{
         scheme: "exact",
         network: TON_NETWORK,
-        amount: service.priceUSDT,
+        amount: skill.priceUSDT,
         asset: config.usdtAssetAddress,
-        payTo: service.ownerAddress,
+        payTo: skill.ownerAddress,
         maxTimeoutSeconds: 60,
-        extra: { name: "USDT", decimals: 6, serviceId: service.id, serviceName: service.name },
+        extra: { name: "USDT", decimals: 6, skillId: skill.id, skillName: skill.name },
       }],
     };
 
     const encoded = Buffer.from(JSON.stringify(requirements), "utf-8").toString("base64");
     res.status(402).set("X-PAYMENT-REQUIRED", encoded).json({
       error: "Payment Required",
-      message: `This service costs ${service.priceReadable}`,
-      service: { id: service.id, name: service.name, price: service.priceReadable },
+      message: `This skill costs ${skill.priceReadable}`,
+      skill: { id: skill.id, name: skill.name, price: skill.priceReadable },
       requirements,
     });
     return;
@@ -200,9 +200,9 @@ app.all("/proxy/:serviceId", async (req: Request, res: Response) => {
     const requirements: PaymentRequirements = {
       scheme: "exact",
       network: TON_NETWORK,
-      amount: service.priceUSDT,
+      amount: skill.priceUSDT,
       asset: config.usdtAssetAddress,
-      payTo: service.ownerAddress,
+      payTo: skill.ownerAddress,
       maxTimeoutSeconds: 60,
       extra: { name: "USDT", decimals: 6 },
     };
@@ -219,20 +219,20 @@ app.all("/proxy/:serviceId", async (req: Request, res: Response) => {
     }
 
     // Payment succeeded — increment stats
-    registry.incrementCalls(service.id, service.priceUSDT);
-    broadcastEvent({ type: "service_called", serviceId: service.id, serviceName: service.name, payer: result.payer, amount: service.priceUSDT, transaction: result.transaction, timestamp: Date.now() });
+    registry.incrementCalls(skill.id, skill.priceUSDT);
+    broadcastEvent({ type: "skill_called", skillId: skill.id, skillName: skill.name, payer: result.payer, amount: skill.priceUSDT, transaction: result.transaction, timestamp: Date.now() });
 
-    // Handle built-in or external service
-    if (service.endpoint === "__BUILTIN__") {
-      const data = await handleBuiltinService(service.slug, req);
-      res.json({ data, payment: { amount: service.priceReadable, transaction: result.transaction } });
+    // Handle built-in or external skill
+    if (skill.endpoint === "__BUILTIN__") {
+      const data = await handleBuiltinSkill(skill.slug, req);
+      res.json({ data, payment: { amount: skill.priceReadable, transaction: result.transaction } });
     } else {
       // Forward to external endpoint
       try {
-        const fetchOptions: RequestInit = { method: service.method, headers: { "Content-Type": "application/json" } };
-        if (service.method === "POST" && req.body) fetchOptions.body = JSON.stringify(req.body);
+        const fetchOptions: RequestInit = { method: skill.method, headers: { "Content-Type": "application/json" } };
+        if (skill.method === "POST" && req.body) fetchOptions.body = JSON.stringify(req.body);
 
-        const url = new URL(service.endpoint);
+        const url = new URL(skill.endpoint);
         if (req.query) {
           for (const [key, value] of Object.entries(req.query)) {
             if (typeof value === "string") url.searchParams.set(key, value);
@@ -241,9 +241,9 @@ app.all("/proxy/:serviceId", async (req: Request, res: Response) => {
 
         const externalRes = await fetch(url.toString(), fetchOptions);
         const data = await externalRes.json().catch(() => externalRes.text());
-        res.json({ data, payment: { amount: service.priceReadable, transaction: result.transaction } });
+        res.json({ data, payment: { amount: skill.priceReadable, transaction: result.transaction } });
       } catch (error) {
-        res.json({ error: "Service call failed", message: error instanceof Error ? error.message : String(error), payment: { amount: service.priceReadable, transaction: result.transaction } });
+        res.json({ error: "Skill call failed", message: error instanceof Error ? error.message : String(error), payment: { amount: skill.priceReadable, transaction: result.transaction } });
       }
     }
   } catch (err) {
@@ -288,7 +288,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
       getENSDescription(ensName),
     ]);
 
-    // Find services registered under this ENS name
+    // Find skills registered under this ENS name
     const result = registry.search({ ensName });
 
     res.json({
@@ -296,7 +296,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
       tonAddress,
       avatar,
       description,
-      services: result.services,
+      skills: result.skills,
     });
   } catch (error) {
     res.json({
@@ -304,7 +304,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
       tonAddress: null,
       avatar: null,
       description: null,
-      services: [],
+      skills: [],
       error: error instanceof Error ? error.message : "Resolution failed",
     });
   }
@@ -316,7 +316,7 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     service: "mesh402-gateway",
-    services: registry.getAll().length,
+    skills: registry.getAll().length,
     uptime: Math.floor((Date.now() - startTime) / 1000),
     wsClients: wsClients.size,
   });
@@ -335,10 +335,10 @@ server.listen(config.port, () => {
   console.log(`TON RPC: ${config.tonRpcUrl}`);
   console.log(`WebSocket: ws://localhost:${config.port}/ws`);
   console.log(`\nEndpoints:`);
-  console.log(`  POST /api/services/register    Register a new service`);
-  console.log(`  GET  /api/services             Search & browse services`);
-  console.log(`  GET  /api/services/:id          Get service details`);
-  console.log(`  ALL  /proxy/:serviceId          Call service (x402 gated)`);
+  console.log(`  POST /api/skills/register       Register a new skill`);
+  console.log(`  GET  /api/skills                Search & browse skills`);
+  console.log(`  GET  /api/skills/:id             Get skill details`);
+  console.log(`  ALL  /proxy/:skillId             Call skill (x402 gated)`);
   console.log(`  POST /verify                    Verify payment`);
   console.log(`  POST /settle                    Settle payment`);
   console.log(`  GET  /supported                 Supported schemes`);

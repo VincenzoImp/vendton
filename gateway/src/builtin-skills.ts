@@ -159,8 +159,8 @@ const sentimentWords: Record<string, string[]> = {
   ],
 };
 
-export async function handleBuiltinService(serviceSlug: string, req: Request): Promise<unknown> {
-  switch (serviceSlug) {
+export async function handleBuiltinSkill(skillSlug: string, req: Request): Promise<unknown> {
+  switch (skillSlug) {
     case "weather-api": {
       const city = ((req.query.city as string) ?? "paris").toLowerCase();
       try {
@@ -302,6 +302,6 @@ export async function handleBuiltinService(serviceSlug: string, req: Request): P
     }
 
     default:
-      return { error: "Unknown built-in service" };
+      return { error: "Unknown built-in skill" };
   }
 }

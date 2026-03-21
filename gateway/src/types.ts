@@ -1,4 +1,4 @@
-export interface ServiceRegistration {
+export interface SkillRegistration {
   id: string;
   name: string;
   slug: string;
@@ -18,7 +18,7 @@ export interface ServiceRegistration {
   outputExample?: Record<string, unknown>;
 }
 
-export interface ServiceQuery {
+export interface SkillQuery {
   q?: string;
   tags?: string[];
   maxPrice?: string;
@@ -30,9 +30,9 @@ export interface ServiceQuery {
 }
 
 export interface RegistryEvent {
-  type: "service_registered" | "service_called" | "settlement" | "service_removed";
-  serviceId?: string;
-  serviceName?: string;
+  type: "skill_registered" | "skill_called" | "settlement" | "skill_removed";
+  skillId?: string;
+  skillName?: string;
   payer?: string;
   amount?: string;
   transaction?: string;

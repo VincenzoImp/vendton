@@ -1,9 +1,9 @@
 import { Tag } from "lucide-react";
-import type { Service } from "../../hooks/useRegistry";
+import type { Skill } from "../../hooks/useSkills";
 
-interface ServiceCardProps {
-  service: Service;
-  onCall?: (service: Service) => void;
+interface SkillCardProps {
+  skill: Skill;
+  onCall?: (skill: Skill) => void;
   compact?: boolean;
 }
 
@@ -22,7 +22,7 @@ const tagColors: Record<string, string> = {
   geolocation: "#0EA5E9",
 };
 
-export default function ServiceCard({ service, onCall, compact }: ServiceCardProps) {
+export default function SkillCard({ skill, onCall, compact }: SkillCardProps) {
   return (
     <div className="rounded-xl bg-[var(--color-secondary-bg)] overflow-hidden">
       <div className="p-4">
@@ -30,26 +30,26 @@ export default function ServiceCard({ service, onCall, compact }: ServiceCardPro
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-[var(--color-text)] truncate">
-                {service.name}
+                {skill.name}
               </h3>
               <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-medium">
-                {service.priceReadable}
+                {skill.priceReadable}
               </span>
             </div>
-            {service.ensName && (
+            {skill.ensName && (
               <p className="text-[10px] font-mono text-purple-500 mt-0.5">
-                {service.ensName}
+                {skill.ensName}
               </p>
             )}
             {!compact && (
               <p className="text-xs text-[var(--color-hint)] mt-1 line-clamp-2">
-                {service.description}
+                {skill.description}
               </p>
             )}
           </div>
           {onCall && (
             <button
-              onClick={() => onCall(service)}
+              onClick={() => onCall(skill)}
               className="shrink-0 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-all active:scale-[0.95]"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
@@ -60,7 +60,7 @@ export default function ServiceCard({ service, onCall, compact }: ServiceCardPro
 
         {!compact && (
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            {service.tags.map((tag) => (
+            {skill.tags.map((tag) => (
               <span
                 key={tag}
                 className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium"
@@ -78,11 +78,11 @@ export default function ServiceCard({ service, onCall, compact }: ServiceCardPro
 
         {!compact && (
           <div className="flex items-center gap-3 mt-2 text-[10px] text-[var(--color-hint)]">
-            <span>{service.callCount} calls</span>
-            <span>{service.method}</span>
-            {service.totalRevenue !== "0" && (
+            <span>{skill.callCount} calls</span>
+            <span>{skill.method}</span>
+            {skill.totalRevenue !== "0" && (
               <span>
-                {(Number(service.totalRevenue) / 1_000_000).toFixed(2)} USDT earned
+                {(Number(skill.totalRevenue) / 1_000_000).toFixed(2)} USDT earned
               </span>
             )}
           </div>

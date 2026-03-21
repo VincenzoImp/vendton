@@ -44,6 +44,11 @@ coverage/
 *.pkg
 *.boc
 
+# SQLite databases
+*.db
+*.db-wal
+*.db-shm
+
 # Temporary
 tmp/
 .tmp/

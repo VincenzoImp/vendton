@@ -31,8 +31,8 @@ interface X402Response {
 
 export interface PaymentEvent {
   type: "payment";
-  service: string;
-  serviceName?: string;
+  skill: string;
+  skillName?: string;
   amount: string;
   recipient: string;
   timestamp: number;
@@ -145,8 +145,8 @@ export async function makePayableRequest(
   if (paidRes.ok) {
     onPayment?.({
       type: "payment",
-      service: url,
-      serviceName: serviceName ?? (requirements.extra?.serviceName as string),
+      skill: url,
+      skillName: serviceName ?? (requirements.extra?.serviceName as string),
       amount: requirements.amount,
       recipient: requirements.payTo,
       timestamp: Date.now(),

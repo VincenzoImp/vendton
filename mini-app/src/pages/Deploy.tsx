@@ -2,13 +2,13 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlusCircle, CheckCircle2, Loader2, AlertTriangle, Rocket } from "lucide-react";
 import { useTonConnect } from "../hooks/useTonConnect";
-import { useRegistry } from "../hooks/useRegistry";
+import { useSkills } from "../hooks/useSkills";
 
 const AVAILABLE_TAGS = ["weather", "data", "ai", "nlp", "translation", "entertainment", "sentiment", "text", "finance", "health", "image"];
 
 export default function Deploy() {
   const { connected, connect, address } = useTonConnect();
-  const { register } = useRegistry();
+  const { register } = useSkills();
 
   const [name, setName] = useState("");
   const [endpoint, setEndpoint] = useState("");
@@ -83,7 +83,7 @@ export default function Deploy() {
             <CheckCircle2 className="w-12 h-12 text-emerald-500" />
           </div>
           <h2 className="text-xl font-bold text-[var(--color-text)]">
-            Service Deployed!
+            Skill Deployed!
           </h2>
           <p className="text-sm text-[var(--color-hint)]">
             <strong>{name}</strong> is now live on the mesh402 marketplace.
@@ -102,7 +102,7 @@ export default function Deploy() {
             className="px-6 py-3 rounded-xl text-white font-semibold text-sm"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            Deploy Another Service
+            Deploy Another Skill
           </button>
         </motion.div>
       </div>
@@ -118,10 +118,10 @@ export default function Deploy() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-[var(--color-text)]">
-            Deploy Service
+            Deploy Skill
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Publish your API to the marketplace and get paid in USDT
+            Publish your API as a skill and get paid in USDT
           </p>
         </div>
       </section>
@@ -141,7 +141,7 @@ export default function Deploy() {
           {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider mb-1">
-              Service Name *
+              Skill Name *
             </label>
             <input
               type="text"
@@ -160,7 +160,7 @@ export default function Deploy() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What does your service do?"
+              placeholder="What does your skill do?"
               rows={3}
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none resize-none"
             />
@@ -175,7 +175,7 @@ export default function Deploy() {
               type="text"
               value={endpoint}
               onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="https://api.example.com/service"
+              placeholder="https://api.example.com/skill"
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
           </div>

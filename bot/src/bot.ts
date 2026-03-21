@@ -14,27 +14,27 @@ const bot = new Bot(BOT_TOKEN);
 bot.command("start", async (ctx) => {
   await ctx.reply(
     "Welcome to mesh402!\n\n" +
-      "The open marketplace where AI agents discover, use, and pay for services on TON.\n\n" +
-      "Deploy your API, set a price in USDT, and start earning — or let an AI agent find and pay for the services you need.\n\n" +
-      "Tap below to open the app:",
+      "The open marketplace for paid AI skills on TON.\n\n" +
+      "Browse skills, deploy your own API to earn USDT, or use the AI Playground to call paid skills with your Claude API key.\n\n" +
+      "Tap below to get started:",
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Browse Marketplace",
+              text: "Browse Skills",
               web_app: { url: MINI_APP_URL },
             },
           ],
           [
             {
-              text: "Deploy a Service",
+              text: "Deploy a Skill",
               web_app: { url: `${MINI_APP_URL}/deploy` },
             },
           ],
           [
             {
-              text: "Agent Playground",
+              text: "AI Playground",
               web_app: { url: `${MINI_APP_URL}/playground` },
             },
           ],
@@ -46,7 +46,7 @@ bot.command("start", async (ctx) => {
 
 bot.command("deploy", async (ctx) => {
   await ctx.reply(
-    "Deploy your API to the marketplace and start earning USDT:",
+    "Deploy your API as a paid skill and start earning USDT:",
     {
       reply_markup: {
         inline_keyboard: [
@@ -62,8 +62,8 @@ bot.command("deploy", async (ctx) => {
   );
 });
 
-bot.command("services", async (ctx) => {
-  await ctx.reply("Browse available paid services on the marketplace:", {
+bot.command("skills", async (ctx) => {
+  await ctx.reply("Browse available paid skills on the marketplace:", {
     reply_markup: {
       inline_keyboard: [
         [
@@ -77,15 +77,15 @@ bot.command("services", async (ctx) => {
   });
 });
 
-bot.command("agent", async (ctx) => {
+bot.command("playground", async (ctx) => {
   await ctx.reply(
-    "Watch an AI agent autonomously discover, chain, and pay for services:",
+    "Use the AI Playground — bring your Claude API key and explore paid skills:",
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Open Agent Playground",
+              text: "Open Playground",
               web_app: { url: `${MINI_APP_URL}/playground` },
             },
           ],
@@ -96,7 +96,7 @@ bot.command("agent", async (ctx) => {
 });
 
 bot.command("dashboard", async (ctx) => {
-  await ctx.reply("View your revenue and transaction history:", {
+  await ctx.reply("View your earnings and spending:", {
     reply_markup: {
       inline_keyboard: [
         [
@@ -112,12 +112,12 @@ bot.command("dashboard", async (ctx) => {
 
 bot.command("help", async (ctx) => {
   await ctx.reply(
-    "Bot Commands:\n\n" +
-      "/start — Welcome & browse marketplace\n" +
-      "/deploy — Deploy your API service\n" +
-      "/services — Browse paid services\n" +
-      "/agent — Watch AI agent demo\n" +
-      "/dashboard — Revenue & transaction history\n" +
+    "mesh402 Bot Commands:\n\n" +
+      "/start — Welcome & open app\n" +
+      "/skills — Browse paid skills\n" +
+      "/deploy — Publish your API as a skill\n" +
+      "/playground — AI Playground with Claude\n" +
+      "/dashboard — Earnings & spending\n" +
       "/help — This message",
   );
 });
@@ -126,5 +126,5 @@ bot.catch((err) => {
   console.error("Bot error:", err);
 });
 
-console.log("Starting bot...");
+console.log("Starting mesh402 bot...");
 bot.start();

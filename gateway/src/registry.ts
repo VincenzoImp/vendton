@@ -1,5 +1,5 @@
-import type { ServiceRegistration, ServiceQuery } from "./types.js";
-import { config } from "./config.js";
+import type { SkillRegistration, SkillQuery } from "./types.js";
+import db from "./db.js";
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
@@ -12,9 +12,42 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-class ServiceRegistry {
-  private services: Map<string, ServiceRegistration> = new Map();
-  private slugIndex: Map<string, string> = new Map();
+function rowToSkill(row: Record<string, unknown>): SkillRegistration {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    slug: row.slug as string,
+    endpoint: row.endpoint as string,
+    method: row.method as "GET" | "POST",
+    description: row.description as string,
+    tags: JSON.parse(row.tags as string),
+    priceUSDT: row.price_usdt as string,
+    priceReadable: row.price_readable as string,
+    ownerAddress: row.owner_address as string,
+    ensName: (row.ens_name as string) || undefined,
+    createdAt: row.created_at as number,
+    callCount: row.call_count as number,
+    totalRevenue: row.total_revenue as string,
+    status: row.status as "active" | "inactive",
+    inputSchema: row.input_schema ? JSON.parse(row.input_schema as string) : undefined,
+    outputExample: row.output_example ? JSON.parse(row.output_example as string) : undefined,
+  };
+}
+
+class SkillRegistry {
+  // Prepared statements
+  private insertStmt = db.prepare(`
+    INSERT INTO skills (id, name, slug, endpoint, method, description, tags, price_usdt, price_readable, owner_address, ens_name, created_at, call_count, total_revenue, status, input_schema, output_example)
+    VALUES (@id, @name, @slug, @endpoint, @method, @description, @tags, @price_usdt, @price_readable, @owner_address, @ens_name, @created_at, @call_count, @total_revenue, @status, @input_schema, @output_example)
+  `);
+
+  private getByIdStmt = db.prepare(`SELECT * FROM skills WHERE id = ?`);
+  private getBySlugStmt = db.prepare(`SELECT * FROM skills WHERE slug = ?`);
+  private getActiveStmt = db.prepare(`SELECT * FROM skills WHERE status = 'active'`);
+  private getByOwnerStmt = db.prepare(`SELECT * FROM skills WHERE owner_address = ? AND status = 'active'`);
+  private incrementCallsStmt = db.prepare(`UPDATE skills SET call_count = call_count + 1, total_revenue = CAST((CAST(total_revenue AS INTEGER) + CAST(? AS INTEGER)) AS TEXT) WHERE id = ?`);
+  private removeStmt = db.prepare(`UPDATE skills SET status = 'inactive' WHERE id = ?`);
+  private countStmt = db.prepare(`SELECT COUNT(*) as count FROM skills`);
 
   register(input: {
     name: string;
@@ -27,13 +60,13 @@ class ServiceRegistry {
     ensName?: string;
     inputSchema?: Record<string, unknown>;
     outputExample?: Record<string, unknown>;
-  }): ServiceRegistration {
+  }): SkillRegistration {
     const id = generateId();
     const slug = slugify(input.name);
     const decimals = 6;
     const readable = (Number(input.priceUSDT) / Math.pow(10, decimals)).toFixed(2) + " USDT";
 
-    const service: ServiceRegistration = {
+    const skill: SkillRegistration = {
       id,
       slug,
       name: input.name,
@@ -53,108 +86,129 @@ class ServiceRegistry {
       outputExample: input.outputExample,
     };
 
-    this.services.set(id, service);
-    this.slugIndex.set(slug, id);
-    return service;
+    this.insertStmt.run({
+      id: skill.id,
+      name: skill.name,
+      slug: skill.slug,
+      endpoint: skill.endpoint,
+      method: skill.method,
+      description: skill.description,
+      tags: JSON.stringify(skill.tags),
+      price_usdt: skill.priceUSDT,
+      price_readable: skill.priceReadable,
+      owner_address: skill.ownerAddress,
+      ens_name: skill.ensName ?? null,
+      created_at: skill.createdAt,
+      call_count: skill.callCount,
+      total_revenue: skill.totalRevenue,
+      status: skill.status,
+      input_schema: skill.inputSchema ? JSON.stringify(skill.inputSchema) : null,
+      output_example: skill.outputExample ? JSON.stringify(skill.outputExample) : null,
+    });
+
+    return skill;
   }
 
-  get(id: string): ServiceRegistration | undefined {
-    return this.services.get(id);
+  get(id: string): SkillRegistration | undefined {
+    const row = this.getByIdStmt.get(id) as Record<string, unknown> | undefined;
+    return row ? rowToSkill(row) : undefined;
   }
 
-  getBySlug(slug: string): ServiceRegistration | undefined {
-    const id = this.slugIndex.get(slug);
-    return id ? this.services.get(id) : undefined;
+  getBySlug(slug: string): SkillRegistration | undefined {
+    const row = this.getBySlugStmt.get(slug) as Record<string, unknown> | undefined;
+    return row ? rowToSkill(row) : undefined;
   }
 
-  search(query: ServiceQuery): { services: ServiceRegistration[]; total: number } {
-    let results = Array.from(this.services.values()).filter(
-      (s) => s.status === "active",
-    );
+  search(query: SkillQuery): { skills: SkillRegistration[]; total: number } {
+    // Build dynamic query
+    const conditions: string[] = ["status = 'active'"];
+    const params: unknown[] = [];
 
     if (query.q) {
-      const q = query.q.toLowerCase();
-      results = results.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.description.toLowerCase().includes(q) ||
-          s.tags.some((t) => t.toLowerCase().includes(q)) ||
-          (s.ensName && s.ensName.toLowerCase().includes(q)),
-      );
+      conditions.push("(name LIKE ? OR description LIKE ? OR tags LIKE ? OR ens_name LIKE ?)");
+      const q = `%${query.q}%`;
+      params.push(q, q, q, q);
     }
 
+    if (query.maxPrice) {
+      conditions.push("CAST(price_usdt AS INTEGER) <= ?");
+      params.push(query.maxPrice);
+    }
+
+    if (query.owner) {
+      conditions.push("owner_address = ?");
+      params.push(query.owner);
+    }
+
+    if (query.ensName) {
+      conditions.push("ens_name = ?");
+      params.push(query.ensName);
+    }
+
+    let orderBy: string;
+    switch (query.sortBy) {
+      case "price":
+        orderBy = "CAST(price_usdt AS INTEGER) ASC";
+        break;
+      case "calls":
+        orderBy = "call_count DESC";
+        break;
+      case "revenue":
+        orderBy = "CAST(total_revenue AS INTEGER) DESC";
+        break;
+      case "created":
+      default:
+        orderBy = "created_at DESC";
+        break;
+    }
+
+    const where = conditions.join(" AND ");
+    const offset = query.offset ?? 0;
+    const limit = query.limit ?? 50;
+
+    const countRow = db.prepare(`SELECT COUNT(*) as count FROM skills WHERE ${where}`).get(...params) as { count: number };
+    const rows = db.prepare(`SELECT * FROM skills WHERE ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...params, limit, offset) as Record<string, unknown>[];
+
+    let skills = rows.map(rowToSkill);
+
+    // Filter by tags in JS since they're stored as JSON
     if (query.tags && query.tags.length > 0) {
       const tagSet = new Set(query.tags.map((t) => t.toLowerCase()));
-      results = results.filter((s) =>
+      skills = skills.filter((s) =>
         s.tags.some((t) => tagSet.has(t.toLowerCase())),
       );
     }
 
-    if (query.maxPrice) {
-      const max = BigInt(query.maxPrice);
-      results = results.filter((s) => BigInt(s.priceUSDT) <= max);
-    }
-
-    if (query.owner) {
-      results = results.filter((s) => s.ownerAddress === query.owner);
-    }
-
-    if (query.ensName) {
-      results = results.filter((s) => s.ensName === query.ensName);
-    }
-
-    const total = results.length;
-
-    switch (query.sortBy) {
-      case "price":
-        results.sort((a, b) => Number(BigInt(a.priceUSDT) - BigInt(b.priceUSDT)));
-        break;
-      case "calls":
-        results.sort((a, b) => b.callCount - a.callCount);
-        break;
-      case "revenue":
-        results.sort((a, b) => Number(BigInt(b.totalRevenue) - BigInt(a.totalRevenue)));
-        break;
-      case "created":
-      default:
-        results.sort((a, b) => b.createdAt - a.createdAt);
-        break;
-    }
-
-    const offset = query.offset ?? 0;
-    const limit = query.limit ?? 50;
-    results = results.slice(offset, offset + limit);
-
-    return { services: results, total };
+    return { skills, total: countRow.count };
   }
 
   remove(id: string): boolean {
-    const service = this.services.get(id);
-    if (!service) return false;
-    service.status = "inactive";
-    return true;
+    const result = this.removeStmt.run(id);
+    return result.changes > 0;
   }
 
   incrementCalls(id: string, amount: string): void {
-    const service = this.services.get(id);
-    if (!service) return;
-    service.callCount += 1;
-    service.totalRevenue = String(BigInt(service.totalRevenue) + BigInt(amount));
+    this.incrementCallsStmt.run(amount, id);
   }
 
-  getByOwner(address: string): ServiceRegistration[] {
-    return Array.from(this.services.values()).filter(
-      (s) => s.ownerAddress === address && s.status === "active",
-    );
+  getByOwner(address: string): SkillRegistration[] {
+    const rows = this.getByOwnerStmt.all(address) as Record<string, unknown>[];
+    return rows.map(rowToSkill);
   }
 
-  getAll(): ServiceRegistration[] {
-    return Array.from(this.services.values()).filter(
-      (s) => s.status === "active",
-    );
+  getAll(): SkillRegistration[] {
+    const rows = this.getActiveStmt.all() as Record<string, unknown>[];
+    return rows.map(rowToSkill);
   }
 
   seed(): void {
+    // Only seed if the table is empty
+    const { count } = this.countStmt.get() as { count: number };
+    if (count > 0) {
+      console.log(`Registry already has ${count} skills, skipping seed`);
+      return;
+    }
+
     const defaultOwner = process.env.DEFAULT_OWNER_ADDRESS ?? "EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD";
 
     this.register({
@@ -208,8 +262,9 @@ class ServiceRegistry {
       outputExample: { sentiment: "positive", confidence: 0.92, keywords: ["great", "excellent"] },
     });
 
-    console.log(`Registry seeded with ${this.services.size} services`);
+    const { count: newCount } = this.countStmt.get() as { count: number };
+    console.log(`Registry seeded with ${newCount} skills`);
   }
 }
 
-export const registry = new ServiceRegistry();
+export const registry = new SkillRegistry();
