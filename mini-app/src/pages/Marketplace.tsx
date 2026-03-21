@@ -7,7 +7,7 @@ import { useTonConnect } from "../hooks/useTonConnect";
 import SkillCard from "../components/marketplace/SkillCard";
 import PaymentFlow from "../components/payment/PaymentFlow";
 
-const ALL_TAGS = ["weather", "data", "ai", "nlp", "translation", "entertainment", "sentiment", "text"];
+const ALL_TAGS = ["weather", "data", "crypto", "finance", "geolocation", "ai", "nlp", "text", "image", "health"];
 
 export default function Marketplace() {
   const { skills, loading, error, search } = useSkills();

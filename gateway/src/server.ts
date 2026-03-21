@@ -296,21 +296,32 @@ app.get("/supported", (_req: Request, res: Response) => {
 app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
   const ensName = req.params.name as string;
   try {
+    // Try local resolution first (skills registered on this gateway)
+    const localSkills = registry.search({ ensName });
+    if (localSkills.skills.length > 0) {
+      const skill = localSkills.skills[0];
+      return res.json({
+        ensName,
+        tonAddress: skill.ownerAddress,
+        skill: { id: skill.id, name: skill.name, price: skill.priceReadable, description: skill.description },
+        source: "mesh402-registry",
+      });
+    }
+
+    // Fall back to on-chain Sepolia resolution
     const [tonAddress, avatar, description] = await Promise.all([
       resolveENSToTON(ensName),
       getENSAvatar(ensName),
       getENSDescription(ensName),
     ]);
 
-    // Find skills registered under this ENS name
-    const result = registry.search({ ensName });
-
     res.json({
       ensName,
       tonAddress,
       avatar,
       description,
-      skills: result.skills,
+      skills: [],
+      source: "ens-sepolia",
     });
   } catch (error) {
     res.json({

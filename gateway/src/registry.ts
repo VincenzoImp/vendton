@@ -68,6 +68,9 @@ class SkillRegistry {
     const decimals = 6;
     const readable = (Number(input.priceUSDT) / Math.pow(10, decimals)).toFixed(2) + " USDT";
 
+    // Auto-generate ENS name from slug
+    const ensName = input.ensName || `${slug}.mesh402.eth`;
+
     const skill: SkillRegistration = {
       id,
       slug,
@@ -80,7 +83,7 @@ class SkillRegistry {
       priceUSDT: input.priceUSDT,
       priceReadable: readable,
       ownerAddress: input.ownerAddress,
-      ensName: input.ensName,
+      ensName,
       createdAt: Date.now(),
       callCount: 0,
       totalRevenue: "0",
@@ -216,103 +219,60 @@ class SkillRegistry {
     const defaultOwner = process.env.DEFAULT_OWNER_ADDRESS ?? "EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD";
 
     this.register({
-      name: "Weather API",
+      name: "Weather Data",
       method: "GET",
-      description: "Real-time weather data for any major city worldwide. Returns temperature, conditions, humidity, and wind speed.",
+      description: "Real-time weather data for any city worldwide. Returns temperature, humidity, wind, visibility, UV index.",
       tags: ["weather", "data", "geolocation"],
       priceUSDT: "100000",
       ownerAddress: defaultOwner,
       ensName: "weather.mesh402.eth",
       inputSchema: { type: "object", properties: { city: { type: "string", description: "City name (e.g. Paris, Tokyo, London)" } }, required: ["city"] },
-      outputExample: { city: "Paris", temperature: 22, condition: "Sunny", humidity: 45, wind: "12 km/h" },
+      outputExample: { city: "Paris", temperature: 22, feelsLike: 20, condition: "Sunny", humidity: "45%", wind: "12 km/h NW", visibility: "10 km", uvIndex: "3" },
       code: `const city = input.city || input.q || "London";
 const res = await fetch(\`https://wttr.in/\${encodeURIComponent(city)}?format=j1\`);
-if (!res.ok) throw new Error(\`wttr.in returned \${res.status}\`);
+if (!res.ok) throw new Error("Weather service unavailable");
 const data = await res.json();
-const current = data.current_condition[0];
+const c = data.current_condition[0];
 return {
   city,
-  temperature: parseInt(current.temp_C),
-  feelsLike: parseInt(current.FeelsLikeC),
-  condition: current.weatherDesc[0].value,
-  humidity: parseInt(current.humidity),
-  windSpeed: current.windspeedKmph + " km/h",
-  source: "wttr.in"
+  temperature: parseInt(c.temp_C),
+  feelsLike: parseInt(c.FeelsLikeC),
+  condition: c.weatherDesc[0].value,
+  humidity: parseInt(c.humidity) + "%",
+  wind: c.windspeedKmph + " km/h " + c.winddir16Point,
+  visibility: c.visibility + " km",
+  uvIndex: c.uvIndex,
+  source: "wttr.in",
+  timestamp: new Date().toISOString()
 };`,
     });
 
     this.register({
-      name: "Joke Generator",
+      name: "Crypto Price",
       method: "GET",
-      description: "Random programming and crypto jokes. Perfect for entertainment or chatbot integrations.",
-      tags: ["entertainment", "jokes", "fun"],
+      description: "Real-time cryptocurrency prices in USD, EUR, BTC with 24h change and market cap. Supports thousands of coins.",
+      tags: ["crypto", "data", "finance"],
       priceUSDT: "50000",
       ownerAddress: defaultOwner,
-      ensName: "jokes.mesh402.eth",
-      outputExample: { joke: "Why do programmers prefer dark mode? Because light attracts bugs." },
-      code: `const jokes = [
-  { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs." },
-  { setup: "Why did the blockchain developer go broke?", punchline: "He lost his private key." },
-  { setup: "What's a smart contract's favorite food?", punchline: "Gas fees." },
-  { setup: "Why don't Bitcoin holders ever get cold?", punchline: "They're always holding." },
-  { setup: "How does a TON validator relax?", punchline: "By staking out a good spot." },
-  { setup: "Why did the API go to therapy?", punchline: "Too many broken promises." },
-  { setup: "What do you call a mass of Telegram users?", punchline: "A ton of messages." },
-  { setup: "Why is USDT's favorite dance the waltz?", punchline: "It always stays stable." },
-];
-return jokes[Math.floor(Math.random() * jokes.length)];`,
-    });
-
-    this.register({
-      name: "Translation Service",
-      method: "POST",
-      description: "Translate text between languages. Supports French, German, Spanish, and Japanese.",
-      tags: ["translation", "language", "ai", "text"],
-      priceUSDT: "500000",
-      ownerAddress: defaultOwner,
-      ensName: "translate.mesh402.eth",
-      inputSchema: { type: "object", properties: { text: { type: "string" }, targetLanguage: { type: "string", enum: ["fr", "de", "es", "ja"] } }, required: ["text", "targetLanguage"] },
-      outputExample: { original: "Hello, how are you?", translated: "Bonjour, comment allez-vous?", language: "French" },
-      code: `const text = input.text || input.q || "";
-const lang = (input.lang || input.language || "fr").toLowerCase();
-if (!text) throw new Error("Missing 'text' parameter");
-const langNames = { fr: "French", de: "German", es: "Spanish", ja: "Japanese" };
-const langName = langNames[lang] || lang;
-const dict = {
-  fr: { hello: "bonjour", goodbye: "au revoir", "thank you": "merci", yes: "oui", no: "non", weather: "m\\u00e9t\\u00e9o", blockchain: "cha\\u00eene de blocs" },
-  de: { hello: "hallo", goodbye: "auf wiedersehen", "thank you": "danke", yes: "ja", no: "nein", weather: "Wetter", blockchain: "Blockchain" },
-  es: { hello: "hola", goodbye: "adi\\u00f3s", "thank you": "gracias", yes: "s\\u00ed", no: "no", weather: "clima", blockchain: "cadena de bloques" },
-  ja: { hello: "\\u3053\\u3093\\u306b\\u3061\\u306f", goodbye: "\\u3055\\u3088\\u3046\\u306a\\u3089", "thank you": "\\u3042\\u308a\\u304c\\u3068\\u3046", yes: "\\u306f\\u3044", no: "\\u3044\\u3044\\u3048", weather: "\\u5929\\u6c17", blockchain: "\\u30d6\\u30ed\\u30c3\\u30af\\u30c1\\u30a7\\u30fc\\u30f3" },
-};
-const d = dict[lang] || {};
-const lower = text.toLowerCase();
-if (d[lower]) return { original: text, translated: d[lower], language: langName };
-return { original: text, translated: \`[\${lang.toUpperCase()}] \${text}\`, language: langName, note: "Basic translation — full neural MT in production" };`,
-    });
-
-    this.register({
-      name: "Sentiment Analysis",
-      method: "POST",
-      description: "Analyze the sentiment of any text. Returns positive, negative, or neutral with confidence score.",
-      tags: ["ai", "nlp", "sentiment", "text"],
-      priceUSDT: "200000",
-      ownerAddress: defaultOwner,
-      ensName: "sentiment.mesh402.eth",
-      inputSchema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] },
-      outputExample: { sentiment: "positive", confidence: 0.92, keywords: ["great", "excellent"] },
-      code: `const text = input.text || input.q || "";
-if (!text) throw new Error("Missing 'text' parameter");
-const positive = ["good","great","excellent","amazing","love","happy","wonderful","fantastic","beautiful","best","awesome","brilliant","perfect","outstanding","superb"];
-const negative = ["bad","terrible","awful","hate","sad","worst","horrible","ugly","poor","disappointing","boring","stupid","broken","useless","annoying"];
-const words = text.toLowerCase().split(/\\W+/);
-let score = 0;
-for (const w of words) {
-  if (positive.includes(w)) score++;
-  if (negative.includes(w)) score--;
-}
-const normalized = words.length > 0 ? score / words.length : 0;
-const sentiment = normalized > 0.1 ? "positive" : normalized < -0.1 ? "negative" : "neutral";
-return { text, sentiment, score: normalized.toFixed(3), wordCount: words.length };`,
+      ensName: "crypto-price.mesh402.eth",
+      inputSchema: { type: "object", properties: { coin: { type: "string", description: "Coin ID (e.g. bitcoin, ethereum, the-open-network)" } }, required: ["coin"] },
+      outputExample: { coin: "bitcoin", price_usd: 67000, price_eur: 62000, price_btc: 1, change_24h: "2.50%", market_cap_usd: 1300000000000 },
+      code: `const coin = (input.coin || input.q || "bitcoin").toLowerCase();
+const res = await fetch(\`https://api.coingecko.com/api/v3/simple/price?ids=\${encodeURIComponent(coin)}&vs_currencies=usd,eur,btc&include_24hr_change=true&include_market_cap=true\`);
+if (!res.ok) throw new Error("Price service unavailable");
+const data = await res.json();
+const info = data[coin];
+if (!info) throw new Error(\`Coin '\${coin}' not found. Try: bitcoin, ethereum, the-open-network\`);
+return {
+  coin,
+  price_usd: info.usd,
+  price_eur: info.eur,
+  price_btc: info.btc,
+  change_24h: (info.usd_24h_change || 0).toFixed(2) + "%",
+  market_cap_usd: info.usd_market_cap,
+  source: "coingecko",
+  timestamp: new Date().toISOString()
+};`,
     });
 
     const { count: newCount } = this.countStmt.get() as { count: number };
