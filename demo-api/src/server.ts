@@ -37,24 +37,24 @@ const services: ServiceEntry[] = [
     method: "GET",
     description:
       "Current weather data for a given city (London, Tokyo, New York, Paris, Sydney, Zurich)",
-    cost: 100_000,
-    costReadable: "0.1 USDT",
+    cost: 1_000,
+    costReadable: "0.001 USDT",
     parameters: { city: "City name (query param, default: london)" },
   },
   {
     path: "/api/joke",
     method: "GET",
     description: "A random programming / crypto joke",
-    cost: 50_000,
-    costReadable: "0.05 USDT",
+    cost: 1_000,
+    costReadable: "0.001 USDT",
   },
   {
     path: "/api/translate",
     method: "POST",
     description:
       "Translate text into French, German, Spanish, or Japanese",
-    cost: 500_000,
-    costReadable: "0.5 USDT",
+    cost: 5_000,
+    costReadable: "0.005 USDT",
     parameters: {
       text: "Text to translate (body)",
       targetLanguage: "Target language code: fr | de | es | ja (body)",
