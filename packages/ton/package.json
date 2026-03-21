@@ -1,0 +1,21 @@
+{
+  "name": "@x402/ton",
+  "version": "0.1.0",
+  "private": true,
+  "description": "x402 payment protocol SDK for TON blockchain",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@ton/core": "^0.60.0",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^15.0.0",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
