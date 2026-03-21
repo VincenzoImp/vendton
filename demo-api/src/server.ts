@@ -74,16 +74,20 @@ for (const svc of services) {
 
 function buildPaymentRequirements(amount: number) {
   return {
-    x402Version: 1,
-    schemes: [
+    x402Version: 2,
+    accepts: [
       {
-        scheme: "ton-connect",
-        network: "testnet",
-        maxAmountRequired: amount,
+        scheme: "exact",
+        network: "ton:0",
+        amount: String(amount),
         asset: USDT_ASSET_ADDRESS,
         payTo: PAY_TO_ADDRESS,
-        facilitatorUrl: FACILITATOR_URL,
-        extra: {},
+        maxTimeoutSeconds: 60,
+        extra: {
+          name: "USDT",
+          decimals: 6,
+          facilitatorUrl: FACILITATOR_URL,
+        },
       },
     ],
   };
@@ -112,13 +116,18 @@ function paymentRequired(amount: number): express.RequestHandler {
 
     // ----- Payment header present → settle via facilitator -----
     try {
+      const paymentPayload = JSON.parse(
+        Buffer.from(paymentHeader, "base64").toString("utf-8"),
+      );
+      const reqs = buildPaymentRequirements(amount);
+
       const settleUrl = `${FACILITATOR_URL}/settle`;
       const settleResponse = await fetch(settleUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paymentHeader,
-          paymentRequirements: buildPaymentRequirements(amount),
+          payload: paymentPayload,
+          requirements: reqs.accepts[0],
         }),
       });
 
