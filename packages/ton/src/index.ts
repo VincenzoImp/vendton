@@ -13,7 +13,6 @@ export {
   TON_NETWORK,
   X402_VERSION,
   JETTON_TRANSFER_OP,
-  JETTON_TRANSFER_NOTIFICATION_OP,
 } from "./types/index.js";
 
 // Client

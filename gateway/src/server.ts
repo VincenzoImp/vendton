@@ -315,7 +315,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
-    service: "mesh402-gateway",
+    name: "mesh402-gateway",
     skills: registry.getAll().length,
     uptime: Math.floor((Date.now() - startTime) / 1000),
     wsClients: wsClients.size,

@@ -28,13 +28,3 @@ export interface SkillQuery {
   limit?: number;
   offset?: number;
 }
-
-export interface RegistryEvent {
-  type: "skill_registered" | "skill_called" | "settlement" | "skill_removed";
-  skillId?: string;
-  skillName?: string;
-  payer?: string;
-  amount?: string;
-  transaction?: string;
-  timestamp: number;
-}

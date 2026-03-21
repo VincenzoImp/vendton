@@ -69,7 +69,7 @@ export async function makePayableRequest(
   } else {
     const errorBody = await initialRes.json();
     requirements = errorBody.accepts?.[0] ?? errorBody.requirements?.accepts?.[0];
-    serviceName = errorBody.service?.name;
+    serviceName = errorBody.skill?.name;
   }
 
   if (!requirements) {
@@ -146,7 +146,7 @@ export async function makePayableRequest(
     onPayment?.({
       type: "payment",
       skill: url,
-      skillName: serviceName ?? (requirements.extra?.serviceName as string),
+      skillName: serviceName ?? (requirements.extra?.skillName as string),
       amount: requirements.amount,
       recipient: requirements.payTo,
       timestamp: Date.now(),

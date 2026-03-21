@@ -2,7 +2,7 @@
   "name": "mesh402",
   "version": "0.1.0",
   "private": true,
-  "description": "Open marketplace where AI agents discover, chain, and pay for services on TON",
+  "description": "Open marketplace where AI agents discover and pay for skills on TON",
   "workspaces": [
     "packages/ton",
     "gateway",
@@ -20,10 +20,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "dependencies": {
-    "@ensdomains/ensjs": "^4.2.2",
-    "dotenv": "^17.3.1"
-  },
+  "dependencies": {},
   "overrides": {
     "@ton/core": "^0.62.0"
   }

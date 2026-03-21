@@ -48,4 +48,3 @@ export interface SupportedResponse {
 export const TON_NETWORK: Network = "ton:0";
 export const X402_VERSION = 2;
 export const JETTON_TRANSFER_OP = 0xf8a7ea5;
-export const JETTON_TRANSFER_NOTIFICATION_OP = 0x7362d09c;

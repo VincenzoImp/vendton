@@ -3,7 +3,6 @@ import {
   beginCell,
   internal,
   toNano,
-  Cell,
   SendMode,
 } from "@ton/core";
 import { WalletContractV5R1 } from "@ton/ton";
