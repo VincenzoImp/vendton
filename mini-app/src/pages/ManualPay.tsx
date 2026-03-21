@@ -186,38 +186,41 @@ export default function ManualPay() {
     setPayStates((s) => ({ ...s, [service.id]: "signing" }));
 
     try {
+      // Fix address format: TON Connect may return with or without workchain prefix
+      const ownerAddr = address.includes(":") ? address : "0:" + address;
+
       // Get sender's Jetton wallet address from the master contract
       const senderJettonWallet = await getJettonWalletAddress(
         payment.asset,
-        "0:" + address,
+        ownerAddr,
       );
 
       setPayStates((s) => ({ ...s, [service.id]: "signing" }));
 
-      // Send Jetton transfer via TON Connect — user approves in wallet
-      const result = await sendJettonTransfer(
+      // Send Jetton transfer via TON Connect with timeout — user approves in wallet
+      const sendPromise = sendJettonTransfer(
         senderJettonWallet,
         payment.payTo,
         payment.amountRaw,
       );
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Transaction timed out (2 min)")), 120_000),
+      );
+      await Promise.race([sendPromise, timeoutPromise]);
 
       setPayStates((s) => ({ ...s, [service.id]: "settling" }));
 
       // TON Connect broadcasts the transaction directly on-chain.
-      // The x402 agent flow uses pre-signed BoCs passed to the facilitator,
-      // but for manual wallet payments the Jetton transfer goes directly
-      // from the user's wallet to the merchant.
-      const txBoc = result.boc;
-
+      // result.boc is the signed BoC, not a tx hash — don't use it as explorer link
       setPayStates((s) => ({ ...s, [service.id]: "success" }));
-      setTxHashes((s) => ({ ...s, [service.id]: txBoc || "confirmed" }));
+      setTxHashes((s) => ({ ...s, [service.id]: "" })); // no tx hash available from TON Connect
       setResponses((s) => ({
         ...s,
         [service.id]: `Payment of ${payment.amount} sent on-chain. The USDT Jetton transfer is being processed by the TON network.`,
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Payment failed";
-      if (msg.includes("Cancelled") || msg.includes("rejected")) {
+      if (/cancel|reject|decline|denied|abort/i.test(msg)) {
         setPayStates((s) => ({ ...s, [service.id]: "payment_required" }));
       } else {
         setErrors((s) => ({ ...s, [service.id]: msg }));
@@ -486,10 +489,12 @@ async function getJettonWalletAddress(
   }
 
   // Parse the result — it's a slice containing an address
-  const resultCell = data.result.stack[0][1].bytes;
-  const cell = await import("@ton/core").then((m) =>
-    m.Cell.fromBase64(resultCell),
-  );
+  const resultBytes = data.result?.stack?.[0]?.[1]?.bytes;
+  if (!resultBytes) {
+    throw new Error("Unexpected response format from toncenter");
+  }
+  const { Cell } = await import("@ton/core");
+  const cell = Cell.fromBase64(resultBytes);
   const addr = cell.beginParse().loadAddress();
   return addr.toString();
 }

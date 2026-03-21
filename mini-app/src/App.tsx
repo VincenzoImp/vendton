@@ -24,6 +24,7 @@ function AppLayout() {
           <Route path="/agent-demo" element={<AgentDemo />} />
           <Route path="/manual-pay" element={<ManualPay />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="*" element={<Home />} />
         </Routes>
       </main>
       <Navigation />
