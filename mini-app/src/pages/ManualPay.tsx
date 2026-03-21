@@ -10,7 +10,11 @@ import {
 } from "lucide-react";
 import { useTonConnect } from "../hooks/useTonConnect";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3002";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === "localhost"
+    ? "http://localhost:3002"
+    : "https://x402-ton-demo-api.up.railway.app");
 
 interface Service {
   id: string;
@@ -55,15 +59,17 @@ export default function ManualPay() {
         }
         const data = await res.json();
         if (!cancelled) {
-          // Normalize: API might return an array directly or { services: [...] }
-          const list = Array.isArray(data) ? data : data.services || [];
+          // Normalize: API returns { status, data: { services: [...] } }
+          const list = Array.isArray(data)
+            ? data
+            : data.data?.services || data.services || [];
           setServices(
-            list.map((s: Record<string, string>, i: number) => ({
-              id: s.id || String(i),
-              name: s.name || s.endpoint || `Service ${i + 1}`,
-              description: s.description || "",
-              price: s.price || "",
-              endpoint: s.endpoint || "",
+            list.map((s: Record<string, unknown>, i: number) => ({
+              id: String(s.id ?? i),
+              name: String(s.name ?? s.path ?? `Service ${i + 1}`),
+              description: String(s.description ?? ""),
+              price: String(s.costReadable ?? s.price ?? ""),
+              endpoint: String(s.path ?? s.endpoint ?? ""),
             })),
           );
         }
@@ -111,11 +117,14 @@ export default function ManualPay() {
       if (res.status === 402) {
         // Parse 402 Payment Required response
         const body = await res.json().catch(() => null);
+        const accept = body?.requirements?.accepts?.[0] || body?.accepts?.[0] || body || {};
+        const amountRaw = accept.amount || "0";
+        const decimals = accept.extra?.decimals || 6;
         const requirement: PaymentRequirement = {
-          amount: body?.amount || body?.price || "unknown",
-          asset: body?.asset || body?.currency || "USDT",
-          payTo: body?.payTo || body?.address || body?.recipient || "",
-          network: body?.network || "TON testnet",
+          amount: `${(Number(amountRaw) / Math.pow(10, decimals)).toFixed(decimals)} ${accept.extra?.name || "USDT"}`,
+          asset: accept.asset || "USDT",
+          payTo: accept.payTo || "",
+          network: accept.network || "ton:0",
         };
         setPaymentInfo((s) => ({ ...s, [service.id]: requirement }));
         setPayStates((s) => ({ ...s, [service.id]: "payment_required" }));
