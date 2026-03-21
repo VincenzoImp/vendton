@@ -16,7 +16,7 @@ const USDT_ASSET_ADDRESS =
   "EQAAYQf_d4ekMhxzZ-DQeKXK_KMFwdmK7SvFRxNlkHhN0VBi"; // Testnet USDT
 const PAY_TO_ADDRESS =
   process.env.PAY_TO_ADDRESS ||
-  "0QBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jbrLUo";
+  "EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD";
 
 // ---------------------------------------------------------------------------
 // Service catalog — single source of truth for endpoints & pricing

@@ -71,7 +71,7 @@ export default function TransactionCard({
             >
               <ExternalLink className="w-2.5 h-2.5" />
               <span className="font-mono">
-                {txHash!.slice(0, 6)}...{txHash!.slice(-4)}
+                {txHash?.slice(0, 6)}...{txHash?.slice(-4)}
               </span>
             </a>
           )}

@@ -132,7 +132,12 @@ export default function ManualPay() {
       const fetchOptions: RequestInit = { method: service.method };
       if (service.method === "POST") {
         fetchOptions.headers = { "Content-Type": "application/json" };
-        fetchOptions.body = JSON.stringify({ text: "Hello world", targetLanguage: "fr" });
+        // Default body for known POST endpoints
+        if (service.endpoint.includes("translate")) {
+          fetchOptions.body = JSON.stringify({ text: "Hello, how are you?", targetLanguage: "fr" });
+        } else {
+          fetchOptions.body = JSON.stringify({});
+        }
       }
       const res = await fetch(url, fetchOptions);
 

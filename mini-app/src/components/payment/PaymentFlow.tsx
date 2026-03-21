@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe,
@@ -75,16 +75,16 @@ export default function PaymentFlow({
     return () => clearTimeout(timer);
   }, [activeStep, isPlaying, onComplete]);
 
+  const startFlow = useCallback(() => {
+    setActiveStep(0);
+    setIsPlaying(true);
+  }, []);
+
   useEffect(() => {
     if (autoPlay) {
       startFlow();
     }
-  }, [autoPlay]);
-
-  function startFlow() {
-    setActiveStep(0);
-    setIsPlaying(true);
-  }
+  }, [autoPlay, startFlow]);
 
   function resetFlow() {
     setActiveStep(-1);
