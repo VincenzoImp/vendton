@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PlusCircle, CheckCircle2, Loader2, AlertTriangle, Rocket, Code2, Globe } from "lucide-react";
+import { Hammer, Loader2, AlertTriangle, Rocket, Code2, Globe, PartyPopper } from "lucide-react";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useDVMs } from "../hooks/useDVMs";
 
@@ -44,12 +44,12 @@ export default function Deploy() {
     }
 
     if (!name || !description || tags.length === 0) {
-      setError("Please fill in all required fields");
+      setError("Please fill in the name, description, and select at least one tag.");
       return;
     }
 
     if (!code.trim() && !endpoint.trim()) {
-      setError("Provide either DVM code or an external API URL");
+      setError("Write some code above or paste an external API URL.");
       return;
     }
 
@@ -59,7 +59,7 @@ export default function Deploy() {
     try {
       const priceNum = parseFloat(price);
       if (isNaN(priceNum) || priceNum <= 0) {
-        setError("Please enter a valid price");
+        setError("Price must be a number greater than zero.");
         setDeploying(false);
         return;
       }
@@ -80,7 +80,7 @@ export default function Deploy() {
 
       setDeployed(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Deployment failed");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setDeploying(false);
     }
@@ -95,14 +95,13 @@ export default function Deploy() {
           className="text-center space-y-4 py-12"
         >
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-500/10 mx-auto">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+            <PartyPopper className="w-12 h-12 text-emerald-500" />
           </div>
           <h2 className="text-xl font-bold text-[var(--color-text)]">
-            DVM Deployed!
+            Your DVM is Live!
           </h2>
-          <p className="text-sm text-[var(--color-hint)]">
-            <strong>{name}</strong> is now live on the VendTON marketplace.
-            AI agents can discover and pay for it automatically.
+          <p className="text-sm text-[var(--color-hint)] max-w-xs mx-auto">
+            <strong>{name}</strong> is now on the marketplace. Agents can discover and pay for it automatically.
           </p>
           <button
             onClick={() => {
@@ -118,7 +117,7 @@ export default function Deploy() {
             className="px-6 py-3 rounded-xl text-white font-semibold text-sm"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            Deploy Another DVM
+            Create Another
           </button>
         </motion.div>
       </div>
@@ -129,15 +128,15 @@ export default function Deploy() {
     <div className="px-4 py-6 space-y-6">
       {/* Header */}
       <section className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-500/10">
-          <PlusCircle className="w-7 h-7 text-blue-500" />
+        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-500/10">
+          <Hammer className="w-7 h-7 text-emerald-500" />
         </div>
         <div>
           <h1 className="text-lg font-bold text-[var(--color-text)]">
-            Deploy DVM
+            Create a DVM
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Vercel for paid API endpoints — write code, set a price, earn USDT
+            Write code, set a price, earn USDT per call
           </p>
         </div>
       </section>
@@ -148,7 +147,7 @@ export default function Deploy() {
           className="w-full px-4 py-3 rounded-xl text-white font-semibold text-sm"
           style={{ backgroundColor: "var(--color-primary)" }}
         >
-          Connect Wallet First
+          Connect Wallet to Deploy
         </button>
       )}
 
@@ -157,7 +156,7 @@ export default function Deploy() {
           {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider mb-1">
-              DVM Name *
+              Name *
             </label>
             <input
               type="text"
@@ -176,7 +175,7 @@ export default function Deploy() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What does your DVM do?"
+              placeholder="Describe what your DVM does..."
               rows={3}
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none resize-none"
             />
@@ -187,7 +186,7 @@ export default function Deploy() {
             <div className="flex items-center gap-2 mb-1">
               <Code2 className="w-3.5 h-3.5 text-green-400" />
               <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-                DVM Code (JavaScript)
+                Code (JavaScript)
               </label>
             </div>
             <textarea
@@ -199,7 +198,7 @@ export default function Deploy() {
               spellCheck={false}
             />
             <p className="text-[10px] text-[var(--color-hint)] mt-1">
-              Your code runs serverlessly. Use <code className="text-green-400/70">input</code> for parameters, <code className="text-green-400/70">fetch</code> for HTTP calls. Return JSON.
+              Runs serverlessly. Access parameters via <code className="text-green-400/70">input</code>, use <code className="text-green-400/70">fetch</code> for HTTP. Return JSON.
             </p>
           </div>
 
@@ -215,7 +214,7 @@ export default function Deploy() {
             <div className="flex items-center gap-2 mb-1">
               <Globe className="w-3.5 h-3.5 text-blue-400" />
               <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-                Or paste an external API URL
+                External API URL
               </label>
             </div>
             <input
@@ -226,7 +225,7 @@ export default function Deploy() {
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
             <p className="text-[10px] text-[var(--color-hint)] mt-1">
-              Leave empty if you wrote code above
+              Proxy calls to an existing API instead of writing code
             </p>
           </div>
 
@@ -270,7 +269,7 @@ export default function Deploy() {
           {/* Tags */}
           <div>
             <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider mb-1">
-              Tags * (select at least 1)
+              Tags * (pick at least one)
             </label>
             <div className="flex flex-wrap gap-1.5">
               {AVAILABLE_TAGS.map((tag) => (
@@ -335,7 +334,7 @@ export default function Deploy() {
             ) : (
               <>
                 <Rocket className="w-4 h-4" />
-                Deploy to Marketplace
+                Deploy
               </>
             )}
           </button>

@@ -15,35 +15,35 @@ const steps = [
     label: "Request",
     icon: Globe,
     color: "#3390EC",
-    description: "Agent discovers and calls a paid DVM",
+    description: "Agent calls a paid DVM endpoint",
   },
   {
     id: "402",
     label: "402",
     icon: ShieldAlert,
     color: "#F5A623",
-    description: "Gateway responds with HTTP 402 Payment Required",
+    description: "Gateway says: payment required",
   },
   {
     id: "sign",
     label: "Sign",
     icon: PenTool,
     color: "#8B5CF6",
-    description: "Agent signs a USDT payment on TON",
+    description: "Agent signs a USDT transfer on TON",
   },
   {
     id: "pay",
-    label: "Pay",
+    label: "Settle",
     icon: Send,
     color: "#10B981",
-    description: "Payment is settled on-chain",
+    description: "Transaction is settled on-chain",
   },
   {
     id: "200",
     label: "200 OK",
     icon: CheckCircle2,
     color: "#3390EC",
-    description: "Gateway verifies payment and returns DVM data",
+    description: "Payment verified -- data returned",
   },
 ];
 
@@ -180,7 +180,7 @@ export default function PaymentFlow({
               animate={{ opacity: 1 }}
               className="text-sm text-center text-[var(--color-hint)]"
             >
-              See how VendTON handles paid DVM requests
+              See how x402 payments work on TON
             </motion.p>
           )}
         </AnimatePresence>
@@ -193,7 +193,7 @@ export default function PaymentFlow({
           className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40"
           style={{ backgroundColor: "var(--color-primary)" }}
         >
-          {activeStep >= steps.length - 1 ? "Replay" : "Start Demo"}
+          {activeStep >= steps.length - 1 ? "Replay" : "Watch Demo"}
         </button>
         {activeStep >= 0 && (
           <button

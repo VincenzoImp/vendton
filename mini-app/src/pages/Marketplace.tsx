@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Store, Search, Wifi, WifiOff, Loader2, Tag } from "lucide-react";
+import { Compass, Search, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useDVMs } from "../hooks/useDVMs";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useTonConnect } from "../hooks/useTonConnect";
@@ -31,18 +31,19 @@ export default function Marketplace() {
 
   return (
     <div className="px-4 py-6 space-y-6">
-      {/* Hero */}
-      <section className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 mx-auto">
-          <Store className="w-9 h-9 text-white" />
+      {/* Header */}
+      <section className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-[#3390EC]/10">
+          <Compass className="w-7 h-7 text-[#3390EC]" />
         </div>
-        <h1 className="text-2xl font-bold text-[var(--color-text)]">
-          VendTON
-        </h1>
-        <p className="text-sm text-[var(--color-hint)] max-w-xs mx-auto leading-relaxed">
-          The open marketplace where AI agents discover, use, and pay for
-          DVMs on TON. Deploy your API, set a price, get paid instantly.
-        </p>
+        <div>
+          <h1 className="text-lg font-bold text-[var(--color-text)]">
+            Explore DVMs
+          </h1>
+          <p className="text-xs text-[var(--color-hint)]">
+            Discover paid APIs and let your agent use them
+          </p>
+        </div>
       </section>
 
       {/* Status */}
@@ -75,15 +76,15 @@ export default function Marketplace() {
             className="w-full max-w-xs px-6 py-3 rounded-xl text-white font-semibold text-sm transition-transform active:scale-[0.97]"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            Connect Wallet to Start
+            Connect Wallet
           </button>
         </section>
       )}
 
       {/* How it works */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-          How It Works
+        <h2 className="text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
+          How x402 Payments Work
         </h2>
         <PaymentFlow />
       </section>
@@ -97,7 +98,7 @@ export default function Marketplace() {
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search DVMs..."
+              placeholder="Search by name, tag, or description..."
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
           </div>
@@ -109,13 +110,12 @@ export default function Marketplace() {
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
                 activeTags.includes(tag)
                   ? "bg-[var(--color-primary)] text-white"
                   : "bg-[var(--color-secondary-bg)] text-[var(--color-hint)]"
               }`}
             >
-              <Tag className="w-2.5 h-2.5" />
               {tag}
             </button>
           ))}
@@ -124,8 +124,8 @@ export default function Marketplace() {
 
       {/* DVMs list */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-          Data Vending Machines
+        <h2 className="text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
+          Available DVMs
           {dvms.length > 0 && (
             <span className="ml-2 text-[var(--color-text)]">({dvms.length})</span>
           )}
@@ -134,19 +134,19 @@ export default function Marketplace() {
         {loading && (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-[var(--color-hint)]">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Loading DVMs...
+            Loading available DVMs...
           </div>
         )}
 
         {error && (
           <div className="text-center py-8 text-xs text-red-500">
-            {error}
+            Could not load DVMs. Check your connection and try again.
           </div>
         )}
 
         {!loading && !error && dvms.length === 0 && (
           <div className="text-center py-8 text-sm text-[var(--color-hint)]">
-            No DVMs found. Try a different search or deploy your own!
+            No DVMs found. Try a different search or create your own.
           </div>
         )}
 

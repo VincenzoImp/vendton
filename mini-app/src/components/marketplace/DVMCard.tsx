@@ -1,4 +1,3 @@
-import { Tag } from "lucide-react";
 import type { DVM } from "../../hooks/useDVMs";
 
 interface DVMCardProps {
@@ -63,13 +62,12 @@ export default function DVMCard({ dvm, onCall, compact }: DVMCardProps) {
             {dvm.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium"
                 style={{
                   backgroundColor: `${tagColors[tag] ?? "#64748B"}15`,
                   color: tagColors[tag] ?? "#64748B",
                 }}
               >
-                <Tag className="w-2 h-2" />
                 {tag}
               </span>
             ))}
@@ -78,12 +76,16 @@ export default function DVMCard({ dvm, onCall, compact }: DVMCardProps) {
 
         {!compact && (
           <div className="flex items-center gap-3 mt-2 text-[10px] text-[var(--color-hint)]">
-            <span>{dvm.callCount} calls</span>
+            <span>{dvm.callCount} {dvm.callCount === 1 ? "call" : "calls"}</span>
+            <span className="text-[var(--color-hint)]/60">|</span>
             <span>{dvm.method}</span>
             {dvm.totalRevenue !== "0" && (
-              <span>
-                {(Number(dvm.totalRevenue) / 1_000_000).toFixed(2)} USDT earned
-              </span>
+              <>
+                <span className="text-[var(--color-hint)]/60">|</span>
+                <span className="text-emerald-600">
+                  {(Number(dvm.totalRevenue) / 1_000_000).toFixed(2)} USDT earned
+                </span>
+              </>
             )}
           </div>
         )}

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Info } from "lucide-react";
+import { Sparkles, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Info } from "lucide-react";
 import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
 import { useWebSocket } from "../hooks/useWebSocket";
 
@@ -53,28 +53,28 @@ export default function Playground() {
 
     switch (event.type) {
       case "thinking":
-        addStep("Agent is analyzing your request...");
+        addStep("Thinking...");
         break;
       case "tool_call":
         if (event.tool === "discover_dvms") {
           addStep(
-            `Searching marketplace for "${event.input && (event.input as Record<string, unknown>).query}"...`,
+            `Searching for "${event.input && (event.input as Record<string, unknown>).query}"...`,
           );
         } else if (event.tool === "call_dvm") {
           addStep(
-            `Calling DVM ${event.input && (event.input as Record<string, unknown>).dvm_id}...`,
+            `Calling DVM: ${event.input && (event.input as Record<string, unknown>).dvm_id}`,
           );
         } else if (event.tool === "check_balance") {
-          addStep("Checking USDT balance...");
+          addStep("Checking wallet balance...");
         } else {
-          addStep(`Using tool: ${event.tool}`);
+          addStep(`Using: ${event.tool}`);
         }
         break;
       case "tool_result":
-        addStep(`Got result from ${event.tool}`);
+        addStep(`Received data from ${event.tool}`);
         break;
       case "payment":
-        addStep(`Paid ${event.amount} for ${event.dvm}`);
+        addStep(`Paid ${event.amount} USDT for ${event.dvm}`);
         break;
       case "done":
         setAgentResponse(event.response as string);
@@ -131,7 +131,7 @@ export default function Playground() {
       }
     } catch (err) {
       setAgentError(
-        err instanceof Error ? err.message : "Failed to reach agent",
+        err instanceof Error ? err.message : "Could not reach the agent. Please try again.",
       );
     } finally {
       setAgentLoading(false);
@@ -148,33 +148,33 @@ export default function Playground() {
       {/* Header */}
       <section className="flex items-center gap-3">
         <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-purple-500/10">
-          <Bot className="w-7 h-7 text-purple-500" />
+          <Sparkles className="w-7 h-7 text-purple-500" />
         </div>
         <div>
           <h1 className="text-lg font-bold text-[var(--color-text)]">
-            AI Playground
+            Ask AI
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Enter your Claude API key to use paid DVMs
+            Ask anything -- the agent pays for DVMs automatically
           </p>
         </div>
       </section>
 
       {/* API Key Input */}
-      <section className="space-y-3">
+      <section className="space-y-2">
         <div className="flex items-center gap-2">
-          <Key className="w-4 h-4 text-[var(--color-hint)]" />
+          <Key className="w-4 h-4 text-purple-500" />
           <span className="text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
             Claude API Key
           </span>
           {apiKey ? (
             <span className="ml-auto flex items-center gap-1 text-[10px] font-medium text-emerald-600">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              API key configured
+              Ready
             </span>
           ) : (
             <span className="ml-auto text-[10px] text-[var(--color-hint)]">
-              Enter your Claude API key to start
+              Required
             </span>
           )}
         </div>
@@ -185,22 +185,22 @@ export default function Playground() {
           placeholder="sk-ant-..."
           className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none font-mono"
         />
+        <p className="text-[10px] text-[var(--color-hint)]">
+          Your key is sent directly to the agent and never stored.
+        </p>
       </section>
 
       {/* How it works */}
-      <section className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Info className="w-3.5 h-3.5 text-blue-500" />
-          <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">
+      <section className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Info className="w-3.5 h-3.5 text-purple-500" />
+          <span className="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">
             How it works
           </span>
         </div>
-        <ol className="space-y-1 text-[11px] text-[var(--color-hint)] list-decimal list-inside">
-          <li>Enter your Claude API key (never stored, used for this session only)</li>
-          <li>Ask anything — Claude will discover and use paid DVMs from the marketplace</li>
-          <li>The agent pays with testnet USDT automatically</li>
-          <li>Watch the step-by-step execution in real time</li>
-        </ol>
+        <p className="text-[11px] text-[var(--color-hint)] leading-relaxed">
+          Ask a question. The agent searches the marketplace for relevant DVMs, pays with testnet USDT, and returns the combined result -- all in real time.
+        </p>
       </section>
 
       {/* Agent Input */}
@@ -211,7 +211,7 @@ export default function Playground() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && apiKey && runAgent(prompt)}
-            placeholder={apiKey ? "Ask the agent to do something..." : "Enter your API key above to start..."}
+            placeholder={apiKey ? "Ask anything..." : "Enter your API key first"}
             disabled={agentLoading || !apiKey}
             className="flex-1 px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none disabled:opacity-50"
           />
@@ -256,7 +256,7 @@ export default function Playground() {
           >
             <div className="flex items-center gap-2 text-purple-600 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Agent is discovering DVMs and making payments...
+              Working on it...
             </div>
           </motion.div>
         )}
@@ -354,12 +354,12 @@ export default function Playground() {
         {isConnected ? (
           <>
             <Wifi className="w-3 h-3" />
-            Live transaction feed connected
+            Live feed connected
           </>
         ) : (
           <>
             <WifiOff className="w-3 h-3" />
-            Connecting to live feed...
+            Connecting...
           </>
         )}
       </div>
@@ -374,7 +374,7 @@ export default function Playground() {
         </h2>
         {transactions.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--color-hint)]">
-            Transactions will appear here as the agent makes payments
+            Payments will appear here in real time
           </div>
         ) : (
           <div className="space-y-2">
