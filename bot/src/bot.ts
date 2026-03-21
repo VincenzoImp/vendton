@@ -38,12 +38,6 @@ bot.command("start", async (ctx) => {
               web_app: { url: `${MINI_APP_URL}/playground` },
             },
           ],
-          [
-            {
-              text: "Dashboard",
-              web_app: { url: `${MINI_APP_URL}/dashboard` },
-            },
-          ],
         ],
       },
     },
@@ -101,21 +95,6 @@ bot.command("playground", async (ctx) => {
   );
 });
 
-bot.command("dashboard", async (ctx) => {
-  await ctx.reply("View your earnings and spending:", {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "Open Dashboard",
-            web_app: { url: `${MINI_APP_URL}/dashboard` },
-          },
-        ],
-      ],
-    },
-  });
-});
-
 bot.command("help", async (ctx) => {
   await ctx.reply(
     "VendTON Bot Commands:\n\n" +
@@ -123,7 +102,6 @@ bot.command("help", async (ctx) => {
       "/dvms — Browse paid DVMs\n" +
       "/deploy — Publish your API as a DVM\n" +
       "/playground — AI Playground with Claude\n" +
-      "/dashboard — Earnings & spending\n" +
       "/help — This message",
   );
 });

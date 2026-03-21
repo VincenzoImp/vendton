@@ -1,11 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { Store, PlusCircle, Bot, BarChart3 } from "lucide-react";
+import { Store, PlusCircle, Bot } from "lucide-react";
 
 const tabs = [
   { to: "/", icon: Store, label: "Marketplace" },
   { to: "/deploy", icon: PlusCircle, label: "Deploy" },
   { to: "/playground", icon: Bot, label: "Agent" },
-  { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
 ];
 
 export default function Navigation() {
