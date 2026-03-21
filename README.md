@@ -2,7 +2,7 @@
 
 **The missing payment layer for autonomous AI on Telegram.**
 
-Cocoon AI processes 132,000 inference jobs per month. AlphaTON Capital has deployed $82.5M in GPU infrastructure to power it. But when those agents need to call an external API — get weather data, translate text, run a computation — they hit a wall. There is no way for an AI agent on Telegram to pay for a service.
+Cocoon AI — launched by Pavel Durov in November 2025 — is bringing privacy-preserving AI agents to Telegram. AlphaTON Capital has committed $82.5M in GPU infrastructure to power them. But when those agents need to call an external API — get weather data, translate text, run a computation — they hit a wall. There is no way for an AI agent on Telegram to autonomously pay for a service.
 
 mesh402 fixes that.
 
@@ -11,16 +11,19 @@ mesh402 fixes that.
 AI agents on Telegram are compute-rich but commerce-poor. They can reason, plan, and execute — but they cannot spend a dollar. Every agent-to-service interaction requires a human in the loop to approve payment, copy-paste an API key, or set up a billing account.
 
 Meanwhile, the agent economy is exploding:
-- **183 AI bots** on Telegram with **44.3M combined MAU**
 - Cocoon AI launched by Pavel Durov in Nov 2025, revenue-generating since Dec 2025
-- Stripe launched Money-Programmable Payments on March 18 — but it doesn't work on TON
-- Visa launched CLI-based payments on March 19 — but it doesn't work on Telegram
+- Stripe launched its Machine Payments Protocol (MPP) on March 18 — but it doesn't work on TON
+- Visa launched CLI-based payments for AI agents on March 18 — but it doesn't work on Telegram
 
-The infrastructure for agent payments exists on Ethereum (Coinbase's x402 protocol, 5.6k GitHub stars). It exists on Solana. It does not exist on TON — the blockchain with 900M users in its ecosystem.
+The infrastructure for agent payments exists on Ethereum (Coinbase's x402 protocol, with thousands of GitHub stars). It exists on Solana. It does not exist on TON — the blockchain powering Telegram's 950M+ users.
 
 ## The Solution
 
-mesh402 is an open marketplace where AI agents discover, use, and pay for services on the TON blockchain. Anyone can publish an API, set a price in USDT, and start earning. Agents autonomously find what they need, pay $0.10 in transaction fees, and chain services together to accomplish complex tasks.
+mesh402 is an open marketplace where AI agents discover, use, and pay for services on the TON blockchain. Anyone can publish an API, set a price in USDT, and start earning. The agent has its own wallet and autonomously finds what it needs, pays the service price in USDT, and chains services together to accomplish complex tasks — with zero human intervention.
+
+There are two roles in mesh402:
+- **Service providers** connect their wallet to deploy services, set prices, and collect revenue
+- **The AI agent** operates autonomously with its own funded wallet, discovering and paying for services on demand
 
 Four protocols, one platform:
 
@@ -28,14 +31,14 @@ Four protocols, one platform:
 |-------|----------|------|
 | **Payment** | x402 | HTTP 402 status code triggers automatic USDT payment |
 | **Identity** | ENS | Human-readable names: `weather.mesh402.eth` |
-| **Settlement** | TON | $0.10 per transaction, sub-second finality |
-| **Distribution** | Telegram | 900M users, native Mini App integration |
+| **Settlement** | TON | Low fees (~0.01-0.05 TON per transfer), sub-second finality |
+| **Distribution** | Telegram | 950M+ users, native Mini App integration |
 
 ## Why Now
 
-The x402 protocol has a demand problem: $28K/day in volume, down 92% from peak. It needs distribution. TON has a payments problem: 900M users but no agent commerce layer. mesh402 connects supply (x402's payment protocol) to demand (TON's massive user base).
+The x402 protocol has a distribution problem. It needs to reach beyond Ethereum and Solana. TON has a payments problem: 950M+ Telegram users but no agent commerce layer. mesh402 connects supply (x402's payment protocol) to demand (TON's massive user base).
 
-Stripe and Visa are racing to build agent payments for traditional finance. Neither serves the 900M users in the Telegram ecosystem. mesh402 is the first to bring x402 to TON — the first implementation on any non-EVM/Solana chain.
+Stripe and Visa are racing to build agent payments for traditional finance. Neither serves the Telegram ecosystem. mesh402 is the first to bring x402 to TON — the first implementation on any non-EVM/Solana chain.
 
 ## Architecture
 
@@ -61,12 +64,15 @@ Stripe and Visa are racing to build agent payments for traditional finance. Neit
     ┌─────┴──────────────┴──────────────┴─────┐
     │              AI Agent                     │
     │   discover → select → pay → chain → report│
+    │         (autonomous wallet)                │
     └─────────────────────┬───────────────────┘
                           │
                     ┌─────▼─────┐
                     │ TON Chain  │  USDT Jetton settlements
                     └───────────┘
 ```
+
+The Playground page in the Mini App shows the agent working autonomously — users observe the agent discovering services, making payments, and chaining results in real time. Users do not pay; the agent does.
 
 ## Live Demo
 
@@ -82,18 +88,16 @@ Agent → returns combined result
 Total: 0.60 USDT, 2 services chained, zero human intervention
 ```
 
-Every payment is a real USDT Jetton transfer on TON, verified with Ed25519 signature validation and on-chain balance checks.
+Every payment is a real USDT Jetton transfer on TON, verified with Ed25519 signature validation and on-chain balance checks. The agent pays from its own wallet — this is agent-to-agent commerce.
 
 ## For Developers
 
-```bash
-npm install @mesh402/sdk
-```
+The SDK is available as a workspace package (`@x402/ton`):
 
 **Add payments to any Express API in 3 lines:**
 
 ```typescript
-import { paymentMiddleware } from "@mesh402/sdk";
+import { paymentMiddleware } from "@x402/ton";
 
 app.use("/api/premium", paymentMiddleware({
   amount: "100000",  // 0.10 USDT (6 decimals)
@@ -143,7 +147,7 @@ BOT_TOKEN=... npm run dev:bot
 ### ENS Integration
 
 Services register with ENS names for discoverability:
-- `weather.mesh402.eth` resolves to the Weather API service
+- `mesh402.eth` registered on ENS Sepolia with `address.ton` text record
 - Resolution via ENSIP-5 text records with `address.ton` key
 - Agents can discover services by ENS name: `resolve_ens("weather.mesh402.eth")`
 
@@ -158,23 +162,23 @@ Services register with ENS names for discoverability:
 
 ## For AlphaTON Capital
 
-Your Cocoon AI agents process 132K inference jobs per month on 570+ NVIDIA B300 GPUs. They can think. They can plan. But they cannot pay.
+Your Cocoon AI agents run on 570+ NVIDIA B300 GPUs backed by $82.5M in committed infrastructure. They can think. They can plan. But they cannot pay.
 
 mesh402 is the payment layer those agents need. When a Cocoon agent needs weather data, a translation, or any external service — mesh402 handles discovery, payment, and settlement autonomously. No human approval. No API keys. Just USDT on TON.
 
 **The numbers that matter:**
-- 900M users in the Telegram ecosystem, zero agent commerce infrastructure
-- $0.10 per USDT transaction on TON vs $2+ on Ethereum
+- Telegram's 950M+ users, zero agent commerce infrastructure on TON
+- USDT transfers on TON cost ~0.01-0.05 TON in network fees vs $2+ on Ethereum
 - First x402 implementation on TON — first-mover on the largest untapped chain
-- Open-source SDK: `npm install @mesh402/sdk`
+- Open-source SDK: `@x402/ton`
 
-This is not a proof of concept. This is working infrastructure — agents discovering services, signing transactions, settling payments on-chain, all in real time.
+This is a working prototype with real on-chain payments — agents discovering services, signing transactions, and settling USDT on TON, all in real time.
 
 ## Monorepo Structure
 
 ```
 mesh402/
-├── packages/ton/       @mesh402/sdk — x402 client, facilitator, middleware
+├── packages/ton/       @x402/ton — x402 client, facilitator, middleware
 ├── gateway/            Unified server: registry + facilitator + proxy + WebSocket
 ├── agent/              Autonomous AI agent with tool use and wallet
 ├── mini-app/           Telegram Mini App (React + Vite + TON Connect)

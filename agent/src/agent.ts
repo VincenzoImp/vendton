@@ -1,3 +1,4 @@
+import "dotenv/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { TonClient } from "@ton/ton";
 import { Address } from "@ton/core";
@@ -206,14 +207,15 @@ async function handleToolCallWithEvents(
 ): Promise<string> {
   sendEvent("tool_call", { tool: name, input });
 
+  const logLenBefore = paymentLog.length;
   const result = await handleToolCall(name, input);
 
   // Check if a payment happened during this tool call
-  if (paymentLog.length > 0) {
-    const latest = paymentLog[paymentLog.length - 1];
+  if (paymentLog.length > logLenBefore) {
+    const lastPayment = paymentLog[paymentLog.length - 1];
     sendEvent("payment", {
-      amount: (Number(latest.amount) / 1_000_000).toFixed(2) + " USDT",
-      service: latest.serviceName ?? latest.service,
+      amount: (Number(lastPayment.amount) / 1_000_000).toFixed(2) + " USDT",
+      service: lastPayment.serviceName ?? lastPayment.service,
     });
   }
 

@@ -1,4 +1,4 @@
-import { ServiceRegistration, ServiceQuery } from "./types.js";
+import type { ServiceRegistration, ServiceQuery } from "./types.js";
 import { config } from "./config.js";
 
 function generateId(): string {

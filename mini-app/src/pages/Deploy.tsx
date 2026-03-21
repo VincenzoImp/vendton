@@ -43,7 +43,13 @@ export default function Deploy() {
     setError("");
 
     try {
-      const priceUSDT = String(Math.round(parseFloat(price) * 1_000_000));
+      const priceNum = parseFloat(price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        setError("Please enter a valid price");
+        setDeploying(false);
+        return;
+      }
+      const priceUSDT = String(Math.round(priceNum * 1_000_000));
       const ownerAddr = address.includes(":") ? address : "0:" + address;
 
       await register({

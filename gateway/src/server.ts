@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import { WebSocketServer, WebSocket } from "ws";
@@ -16,8 +17,6 @@ import { config } from "./config.js";
 import { registry } from "./registry.js";
 import { handleBuiltinService } from "./builtin-services.js";
 import { resolveENSToTON, getENSAvatar, getENSDescription } from "./ens.js";
-import type { RegistryEvent } from "./types.js";
-
 // TON client
 const tonClient = new TonClient({
   endpoint: config.tonRpcUrl,

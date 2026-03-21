@@ -47,3 +47,4 @@ coverage/
 # Temporary
 tmp/
 .tmp/
+mini-app/tsconfig.tsbuildinfo

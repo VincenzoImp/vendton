@@ -5,7 +5,7 @@ import {
   toNano,
   SendMode,
 } from "@ton/core";
-import { WalletContractV5R1, TonClient } from "@ton/ton";
+import { TonClient } from "@ton/ton";
 import {
   getWalletSeqno,
   getJettonWalletAddress,
@@ -131,15 +131,6 @@ export async function makePayableRequest(
     },
   };
 
-  onPayment?.({
-    type: "payment",
-    service: url,
-    serviceName: serviceName ?? (requirements.extra?.serviceName as string),
-    amount: requirements.amount,
-    recipient: requirements.payTo,
-    timestamp: Date.now(),
-  });
-
   const paidRes = await fetch(url, {
     method,
     headers: {
@@ -150,5 +141,17 @@ export async function makePayableRequest(
   });
 
   const data = await paidRes.json().catch(() => paidRes.text());
+
+  if (paidRes.ok) {
+    onPayment?.({
+      type: "payment",
+      service: url,
+      serviceName: serviceName ?? (requirements.extra?.serviceName as string),
+      amount: requirements.amount,
+      recipient: requirements.payTo,
+      timestamp: Date.now(),
+    });
+  }
+
   return { status: paidRes.status, data };
 }

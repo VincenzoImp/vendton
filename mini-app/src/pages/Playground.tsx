@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign } from "lucide-react";
 import PaymentFlow from "../components/payment/PaymentFlow";
@@ -20,7 +20,6 @@ const PRESET_PROMPTS = [
 
 export default function Playground() {
   const { events, isConnected, lastEvent } = useWebSocket();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [flowKey, setFlowKey] = useState(0);
   const [flowActive, setFlowActive] = useState(false);
 
@@ -35,8 +34,8 @@ export default function Playground() {
     Array<{ type: string; text: string; timestamp: number }>
   >([]);
 
-  useEffect(() => {
-    setTransactions(
+  const transactions = useMemo<Transaction[]>(
+    () =>
       events.map((evt, i) => ({
         id: `${evt.transaction}-${i}`,
         service: evt.serviceName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
@@ -45,8 +44,8 @@ export default function Playground() {
         timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
         txHash: evt.transaction,
       })),
-    );
-  }, [events]);
+    [events],
+  );
 
   useEffect(() => {
     if (lastEvent) {
