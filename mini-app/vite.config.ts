@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     nodePolyfills({
-      include: ["buffer", "process"],
+      include: ["buffer", "process", "crypto", "stream", "util", "events"],
       globals: { Buffer: true, process: true },
     }),
   ],
