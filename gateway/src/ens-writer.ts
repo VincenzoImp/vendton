@@ -2,7 +2,7 @@ import { createPublicClient, createWalletClient, http, type Hex, namehash } from
 import { sepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { addEnsContracts } from "@ensdomains/ensjs";
-import { createSubname } from "@ensdomains/ensjs/wallet";
+import { createSubname, deleteSubname } from "@ensdomains/ensjs/wallet";
 
 const ENS_PRIVATE_KEY = process.env.ENS_PRIVATE_KEY || "0x101dd834ae7067d5a10ae39be95dbd917b0642b1412a96c7a35235668db9b384";
 const RPC_URL = process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
@@ -104,5 +104,22 @@ export async function createDVMSubname(data: SubnameData): Promise<{ success: bo
     const msg = error instanceof Error ? error.message : String(error);
     console.error(`[ens] Failed to create subname ${fullName}:`, msg.slice(0, 100));
     return { success: false, ensName: fullName, error: msg };
+  }
+}
+
+export async function deleteDVMSubname(ensName: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const tx = await deleteSubname(walletClient, {
+      name: ensName,
+      contract: "nameWrapper",
+      account,
+    });
+    await publicClient.waitForTransactionReceipt({ hash: tx });
+    console.log(`[ens] Deleted subdomain: ${ensName}`);
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[ens] Failed to delete ${ensName}:`, msg.slice(0, 100));
+    return { success: false, error: msg };
   }
 }

@@ -17,7 +17,7 @@ import { config } from "./config.js";
 import { registry } from "./registry.js";
 import { executeDVM } from "./executor.js";
 import { resolveENSToTON, getENSAvatar, getENSDescription } from "./ens.js";
-import { createDVMSubname } from "./ens-writer.js";
+import { createDVMSubname, deleteDVMSubname } from "./ens-writer.js";
 // TON client
 const tonClient = new TonClient({
   endpoint: config.tonRpcUrl,
@@ -182,6 +182,41 @@ app.get("/api/dvms/:id", (req: Request, res: Response) => {
     return;
   }
   res.json({ dvm });
+});
+
+app.delete("/api/dvms/:id", async (req: Request, res: Response) => {
+  const dvmId = req.params.id as string;
+  const ownerAddress = req.headers["x-owner-address"] as string;
+
+  if (!ownerAddress) {
+    res.status(401).json({ error: "Missing X-OWNER-ADDRESS header" });
+    return;
+  }
+
+  const dvm = registry.get(dvmId);
+  if (!dvm) {
+    res.status(404).json({ error: "DVM not found" });
+    return;
+  }
+
+  const normalizedOwner = ownerAddress.replace(/^0:/, "").toLowerCase();
+  const normalizedDvmOwner = dvm.ownerAddress.replace(/^0:/, "").toLowerCase();
+  if (normalizedOwner !== normalizedDvmOwner) {
+    res.status(403).json({ error: "Not the owner of this DVM" });
+    return;
+  }
+
+  registry.remove(dvmId);
+
+  // Delete ENS subdomain in background
+  if (dvm.ensName && dvm.ensName.endsWith(".vendton.eth")) {
+    deleteDVMSubname(dvm.ensName).then(result => {
+      console.log(`[ens] Subdomain ${dvm.ensName}: ${result.success ? "deleted" : result.error}`);
+    });
+  }
+
+  broadcastEvent({ type: "dvm_deleted", dvmId: dvm.id, dvmName: dvm.name, timestamp: Date.now() });
+  res.json({ success: true, message: `DVM "${dvm.name}" deleted` });
 });
 
 // === Proxy Route — the x402 gateway ===

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Hammer, Loader2, AlertTriangle, Rocket, Code2, Globe, PartyPopper } from "lucide-react";
+import { toNano } from "@ton/core";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useDVMs } from "../hooks/useDVMs";
 
@@ -15,7 +16,7 @@ const data = await res.json();
 return { city, temp: data.current_condition[0].temp_C };`;
 
 export default function Deploy() {
-  const { connected, connect, address } = useTonConnect();
+  const { connected, connect, address, sendTransaction } = useTonConnect();
   const { register } = useDVMs();
 
   const [name, setName] = useState("");
@@ -63,6 +64,17 @@ export default function Deploy() {
         setDeploying(false);
         return;
       }
+
+      // Pay creation fee (0.05 TON) via TON Connect
+      const PLATFORM_WALLET = "EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD";
+      try {
+        await sendTransaction(PLATFORM_WALLET, toNano("0.05").toString());
+      } catch (feeErr) {
+        setError("Creation fee payment failed. Please try again.");
+        setDeploying(false);
+        return;
+      }
+
       const priceUSDT = String(Math.round(priceNum * 1_000_000));
       const ownerAddr = address.includes(":") ? address : "0:" + address;
 

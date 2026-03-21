@@ -33,6 +33,7 @@ interface UseDVMsReturn {
   refresh: () => void;
   search: (q: string, tags?: string[]) => void;
   register: (data: RegisterDVMInput) => Promise<DVM>;
+  remove: (id: string, ownerAddress: string) => Promise<void>;
 }
 
 interface RegisterDVMInput {
@@ -101,7 +102,19 @@ export function useDVMs(): UseDVMsReturn {
     return result.dvm;
   }, [fetchDVMs]);
 
-  return { dvms, loading, error, refresh, search, register };
+  const remove = useCallback(async (id: string, ownerAddress: string) => {
+    const res = await fetch(`${GATEWAY_URL}/api/dvms/${id}`, {
+      method: "DELETE",
+      headers: { "X-OWNER-ADDRESS": ownerAddress },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    await fetchDVMs();
+  }, [fetchDVMs]);
+
+  return { dvms, loading, error, refresh, search, register, remove };
 }
 
 export { GATEWAY_URL };
