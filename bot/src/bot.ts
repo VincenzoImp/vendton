@@ -38,6 +38,12 @@ bot.command("start", async (ctx) => {
               web_app: { url: `${MINI_APP_URL}/playground` },
             },
           ],
+          [
+            {
+              text: "Dashboard",
+              web_app: { url: `${MINI_APP_URL}/dashboard` },
+            },
+          ],
         ],
       },
     },
