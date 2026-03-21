@@ -18,7 +18,7 @@
     "dev:bot": "npm run dev --workspace=bot"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@ensdomains/ensjs": "^4.2.2"
