@@ -1,0 +1,25 @@
+{
+  "name": "x402-ton",
+  "version": "0.1.0",
+  "private": true,
+  "description": "First x402 protocol implementation on TON blockchain",
+  "workspaces": [
+    "packages/ton",
+    "facilitator",
+    "demo-api",
+    "agent",
+    "mini-app",
+    "bot"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:facilitator": "npm run dev --workspace=facilitator",
+    "dev:demo-api": "npm run dev --workspace=demo-api",
+    "dev:mini-app": "npm run dev --workspace=mini-app",
+    "dev:bot": "npm run dev --workspace=bot",
+    "dev:agent": "npm run dev --workspace=agent"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
