@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Wallet, Info } from "lucide-react";
-import PaymentFlow from "../components/payment/PaymentFlow";
+import { Bot, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Info } from "lucide-react";
 import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { useTonConnect } from "../hooks/useTonConnect";
 
 const AGENT_URL =
   import.meta.env.VITE_AGENT_URL ||
@@ -19,11 +17,7 @@ const PRESET_PROMPTS = [
 ];
 
 export default function Playground() {
-  const { events, isConnected, lastEvent } = useWebSocket();
-  const { connected: walletConnected, shortAddress, connect: connectWallet } = useTonConnect();
-  const [flowKey, setFlowKey] = useState(0);
-  const [flowActive, setFlowActive] = useState(false);
-
+  const { events, isConnected } = useWebSocket();
   const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
   const [agentResponse, setAgentResponse] = useState("");
@@ -48,17 +42,6 @@ export default function Playground() {
       })),
     [events],
   );
-
-  useEffect(() => {
-    if (lastEvent) {
-      setFlowActive(true);
-      setFlowKey((k) => k + 1);
-    }
-  }, [lastEvent]);
-
-  const handleFlowComplete = useCallback(() => {
-    setFlowActive(false);
-  }, []);
 
   function handleAgentEvent(event: Record<string, unknown>) {
     const addStep = (text: string) => {
@@ -172,7 +155,7 @@ export default function Playground() {
             AI Playground
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Connect your Claude API key and TON wallet to use paid DVMs
+            Enter your Claude API key to use paid DVMs
           </p>
         </div>
       </section>
@@ -204,30 +187,6 @@ export default function Playground() {
         />
       </section>
 
-      {/* Wallet Connection */}
-      <section>
-        {walletConnected ? (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10">
-            <Wallet className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-medium text-emerald-600">
-              Wallet connected
-            </span>
-            <span className="ml-auto font-mono text-xs text-emerald-600/80">
-              {shortAddress}
-            </span>
-          </div>
-        ) : (
-          <button
-            onClick={connectWallet}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: "var(--color-primary)" }}
-          >
-            <Wallet className="w-4 h-4" />
-            Connect wallet to pay for DVMs
-          </button>
-        )}
-      </section>
-
       {/* How it works */}
       <section className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
         <div className="flex items-center gap-1.5 mb-2">
@@ -238,9 +197,9 @@ export default function Playground() {
         </div>
         <ol className="space-y-1 text-[11px] text-[var(--color-hint)] list-decimal list-inside">
           <li>Enter your Claude API key (never stored, used for this session only)</li>
-          <li>Connect your TON wallet</li>
           <li>Ask anything — Claude will discover and use paid DVMs from the marketplace</li>
-          <li>Payments happen on TON testnet with USDT</li>
+          <li>The agent pays with testnet USDT automatically</li>
+          <li>Watch the step-by-step execution in real time</li>
         </ol>
       </section>
 
@@ -404,14 +363,6 @@ export default function Playground() {
           </>
         )}
       </div>
-
-      {/* Payment flow */}
-      <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-          Payment Flow
-        </h2>
-        <PaymentFlow key={flowKey} autoPlay={flowActive} onComplete={handleFlowComplete} />
-      </section>
 
       {/* Transaction feed */}
       <section className="space-y-2">

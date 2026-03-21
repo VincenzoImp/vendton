@@ -35,7 +35,7 @@ DVMs persist in a SQLite database. Payments settle in USDT on TON via x402. Iden
 ### Payment Flow (x402)
 
 ```
-1. Agent calls GET /proxy/:dvmId
+1. Agent calls GET /dvm/:owner/:name
 2. Gateway responds: 402 Payment Required (X-PAYMENT-REQUIRED header)
 3. Agent signs USDT Jetton transfer (Ed25519, V5R1 wallet)
 4. Agent retries with signed BoC in X-PAYMENT header
@@ -49,7 +49,7 @@ DVMs persist in a SQLite database. Payments settle in USDT on TON via x402. Iden
 ```
 vendton/
 ├── packages/ton/       @x402/ton SDK — client, facilitator, middleware
-├── gateway/            Express + SQLite + WebSocket + x402 proxy
+├── gateway/            Express + SQLite + WebSocket + x402 (/dvm/:owner/:name)
 ├── agent/              Claude with tool use + TON wallet
 ├── mini-app/           React 19 + Vite + TMA SDK + TON Connect
 └── bot/                grammY Telegram bot
@@ -73,14 +73,25 @@ npm run dev:mini-app
 BOT_TOKEN=... npm run dev:bot
 ```
 
-## Built-in Demo DVMs
+## Example DVMs (deployed during demo)
+
+The gateway starts empty — zero DVMs. Anyone can deploy their own via the Deploy page or API. Write JavaScript, set a price, start earning.
 
 | DVM | Price | What it does |
 |-----|-------|-------------|
-| Weather Data | 0.10 USDT | Real-time weather from wttr.in — any city worldwide |
+| Weather Data | 0.10 USDT | Real-time weather from wttr.in — any city |
 | Crypto Price | 0.05 USDT | Live crypto prices from CoinGecko — any coin |
+| Sum Calculator | 0.02 USDT | Adds two numbers — demonstrates DVM composability |
 
-Anyone can deploy additional DVMs via the Deploy page or API. Write JavaScript, set a price, start earning.
+## Demo Flow
+
+1. Start with empty marketplace — zero DVMs
+2. Deploy "Weather Data" DVM via the Deploy page
+3. Deploy "Crypto Price" DVM
+4. Deploy "Sum Calculator" DVM
+5. Open Playground, enter Claude API key
+6. Ask: "Get the temperature in Lausanne, the price of Bitcoin, and sum them"
+7. Watch Claude discover 3 DVMs, call them, pay 0.17 USDT, chain results
 
 ## Technical Details
 
