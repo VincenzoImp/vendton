@@ -55,7 +55,7 @@ export function useWebSocket(): UseWebSocketReturn {
         if (!mountedRef.current) return;
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "settlement" || data.type === "service_called") {
+          if (data.type === "settlement" || data.type === "skill_called") {
             const settlement: SettlementEvent = {
               type: data.type,
               skillId: data.skillId || data.serviceId || "",

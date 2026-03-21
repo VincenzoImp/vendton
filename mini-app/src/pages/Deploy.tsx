@@ -248,7 +248,7 @@ export default function Deploy() {
               type="text"
               value={ensName}
               onChange={(e) => setEnsName(e.target.value)}
-              placeholder="myservice.mesh402.eth"
+              placeholder="myskill.mesh402.eth"
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
           </div>

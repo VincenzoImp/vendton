@@ -17,7 +17,7 @@ export default function Dashboard() {
   const transactions: Transaction[] = useMemo(() => {
     return events.map((evt, i) => ({
       id: `${evt.transaction}-${i}`,
-      service: evt.skillName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
+      skill: evt.skillName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
       amount: `${(Number(evt.amount) / 1_000_000).toFixed(2)} USDT`,
       status: "confirmed" as const,
       timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
@@ -156,7 +156,7 @@ export default function Dashboard() {
         })}
       </section>
 
-      {/* Revenue tab — owned services */}
+      {/* Revenue tab — owned skills */}
       {activeTab === "revenue" && (
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">

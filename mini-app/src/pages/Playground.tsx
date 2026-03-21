@@ -31,7 +31,7 @@ export default function Playground() {
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentError, setAgentError] = useState("");
   const [agentPayments, setAgentPayments] = useState<
-    Array<{ amount: string; service: string }>
+    Array<{ amount: string; skill: string }>
   >([]);
   const [agentSteps, setAgentSteps] = useState<
     Array<{ type: string; text: string; timestamp: number }>
@@ -41,7 +41,7 @@ export default function Playground() {
     () =>
       events.map((evt, i) => ({
         id: `${evt.transaction}-${i}`,
-        service: evt.skillName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
+        skill: evt.skillName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
         amount: `${(Number(evt.amount) / 1_000_000).toFixed(2)} USDT`,
         status: "confirmed" as const,
         timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
@@ -92,12 +92,12 @@ export default function Playground() {
         addStep(`Got result from ${event.tool}`);
         break;
       case "payment":
-        addStep(`Paid ${event.amount} for ${event.service}`);
+        addStep(`Paid ${event.amount} for ${event.skill}`);
         break;
       case "done":
         setAgentResponse(event.response as string);
         setAgentPayments(
-          (event.payments as Array<{ amount: string; service: string }>) ?? [],
+          (event.payments as Array<{ amount: string; skill: string }>) ?? [],
         );
         break;
       case "error":
@@ -374,7 +374,7 @@ export default function Playground() {
                   >
                     <span className="flex items-center gap-1">
                       <ArrowRight className="w-2.5 h-2.5 text-[var(--color-hint)]" />
-                      <span className="truncate">{p.service}</span>
+                      <span className="truncate">{p.skill}</span>
                     </span>
                     <span className="font-mono font-medium shrink-0 ml-2">{p.amount}</span>
                   </div>
