@@ -1,30 +1,27 @@
 {
-  "name": "x402-ton",
+  "name": "mesh402",
   "version": "0.1.0",
   "private": true,
-  "description": "First x402 protocol implementation on TON blockchain",
+  "description": "Open marketplace where AI agents discover, chain, and pay for services on TON",
   "workspaces": [
     "packages/ton",
-    "facilitator",
-    "demo-api",
+    "gateway",
     "agent",
     "mini-app",
-    "bot",
-    "gateway"
+    "bot"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "dev:facilitator": "npm run dev --workspace=facilitator",
-    "dev:demo-api": "npm run dev --workspace=demo-api",
-    "dev:mini-app": "npm run dev --workspace=mini-app",
-    "dev:bot": "npm run dev --workspace=bot",
+    "dev:gateway": "npm run dev --workspace=gateway",
     "dev:agent": "npm run dev --workspace=agent",
-    "dev:gateway": "npm run dev --workspace=gateway"
+    "dev:mini-app": "npm run dev --workspace=mini-app",
+    "dev:bot": "npm run dev --workspace=bot"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@ensdomains/ensjs": "^4.2.2",
     "dotenv": "^17.3.1"
   }
 }
