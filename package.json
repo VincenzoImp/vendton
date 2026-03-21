@@ -22,5 +22,10 @@
   },
   "dependencies": {
     "@ensdomains/ensjs": "^4.2.2"
+  },
+  "overrides": {
+    "@ton/core": "0.62.1",
+    "@ton/ton": "15.4.0",
+    "@ton/crypto": "3.3.0"
   }
 }
