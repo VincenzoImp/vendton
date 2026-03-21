@@ -9,7 +9,8 @@
     "demo-api",
     "agent",
     "mini-app",
-    "bot"
+    "bot",
+    "gateway"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
@@ -17,7 +18,8 @@
     "dev:demo-api": "npm run dev --workspace=demo-api",
     "dev:mini-app": "npm run dev --workspace=mini-app",
     "dev:bot": "npm run dev --workspace=bot",
-    "dev:agent": "npm run dev --workspace=agent"
+    "dev:agent": "npm run dev --workspace=agent",
+    "dev:gateway": "npm run dev --workspace=gateway"
   },
   "engines": {
     "node": ">=20.0.0"
