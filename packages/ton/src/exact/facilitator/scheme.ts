@@ -163,12 +163,10 @@ export async function verify(
       };
     }
 
-    // 6. Parse inner messages to verify Jetton transfer destination and amount
-    // The signed body contains wallet V5R1 actions which include internal messages
-    // For a complete production implementation, we would parse the V5R1 action list
-    // and verify the inner Jetton transfer op, amount, and destination match requirements.
-    // The BoC is immutable (pre-signed), so if signature is valid and the sender
-    // has sufficient balance, the payment will execute as constructed by the client.
+    // Note: We verify signature, address derivation, Jetton ownership, and balance.
+    // Inner Jetton transfer amount/destination parsing is not implemented in this version.
+    // The pre-signed BoC is immutable — if the signature is valid and balance is sufficient,
+    // the transfer will execute exactly as the client constructed it.
 
     return {
       isValid: true,
@@ -309,6 +307,7 @@ async function waitForTransaction(
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
 
-  // Timeout — transaction may still be processing
+  // Timeout — BoC was broadcast but seqno didn't increment within the window.
+  // The transaction may still be processing on the network.
   return "timeout:pending";
 }

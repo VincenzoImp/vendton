@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign } from "lucide-react";
+import { Bot, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Wallet, Info } from "lucide-react";
 import PaymentFlow from "../components/payment/PaymentFlow";
 import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useTonConnect } from "../hooks/useTonConnect";
 
 const AGENT_URL =
   import.meta.env.VITE_AGENT_URL ||
@@ -20,9 +21,11 @@ const PRESET_PROMPTS = [
 
 export default function Playground() {
   const { events, isConnected, lastEvent } = useWebSocket();
+  const { connected: walletConnected, shortAddress, connect: connectWallet } = useTonConnect();
   const [flowKey, setFlowKey] = useState(0);
   const [flowActive, setFlowActive] = useState(false);
 
+  const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
   const [agentResponse, setAgentResponse] = useState("");
   const [agentLoading, setAgentLoading] = useState(false);
@@ -115,7 +118,7 @@ export default function Playground() {
       const response = await fetch(`${AGENT_URL}/run/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({ prompt: input, apiKey: apiKey || undefined }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -167,12 +170,79 @@ export default function Playground() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-[var(--color-text)]">
-            Agent Playground
+            AI Playground
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Give the agent a goal — watch it discover, chain, and pay for services
+            Connect your Claude API key and TON wallet to use paid services
           </p>
         </div>
+      </section>
+
+      {/* API Key Input */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Key className="w-4 h-4 text-[var(--color-hint)]" />
+          <span className="text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
+            Claude API Key
+          </span>
+          {apiKey ? (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-medium text-emerald-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              API key configured
+            </span>
+          ) : (
+            <span className="ml-auto text-[10px] text-[var(--color-hint)]">
+              Enter your Claude API key to start
+            </span>
+          )}
+        </div>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder="sk-ant-..."
+          className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none font-mono"
+        />
+      </section>
+
+      {/* Wallet Connection */}
+      <section>
+        {walletConnected ? (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10">
+            <Wallet className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-medium text-emerald-600">
+              Wallet connected
+            </span>
+            <span className="ml-auto font-mono text-xs text-emerald-600/80">
+              {shortAddress}
+            </span>
+          </div>
+        ) : (
+          <button
+            onClick={connectWallet}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: "var(--color-primary)" }}
+          >
+            <Wallet className="w-4 h-4" />
+            Connect wallet to pay for services
+          </button>
+        )}
+      </section>
+
+      {/* How it works */}
+      <section className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Info className="w-3.5 h-3.5 text-blue-500" />
+          <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">
+            How it works
+          </span>
+        </div>
+        <ol className="space-y-1 text-[11px] text-[var(--color-hint)] list-decimal list-inside">
+          <li>Enter your Claude API key (never stored, used for this session only)</li>
+          <li>Connect your TON wallet</li>
+          <li>Ask anything — Claude will discover and use paid APIs from the marketplace</li>
+          <li>Payments happen on TON testnet with USDT</li>
+        </ol>
       </section>
 
       {/* Agent Input */}
@@ -182,14 +252,14 @@ export default function Playground() {
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runAgent(prompt)}
-            placeholder="Ask the agent to do something..."
-            disabled={agentLoading}
+            onKeyDown={(e) => e.key === "Enter" && apiKey && runAgent(prompt)}
+            placeholder={apiKey ? "Ask the agent to do something..." : "Enter your API key above to start..."}
+            disabled={agentLoading || !apiKey}
             className="flex-1 px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none disabled:opacity-50"
           />
           <button
             onClick={() => runAgent(prompt)}
-            disabled={agentLoading || !prompt.trim()}
+            disabled={agentLoading || !prompt.trim() || !apiKey}
             className="px-4 py-3 rounded-xl text-white font-semibold disabled:opacity-50"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
@@ -207,7 +277,7 @@ export default function Playground() {
             <button
               key={i}
               onClick={() => { setPrompt(p); runAgent(p); }}
-              disabled={agentLoading}
+              disabled={agentLoading || !apiKey}
               className="px-3 py-1.5 rounded-lg text-[11px] bg-[var(--color-secondary-bg)] text-[var(--color-hint)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
             >
               <Zap className="w-3 h-3 inline mr-1" />

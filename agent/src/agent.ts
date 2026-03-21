@@ -18,11 +18,12 @@ const USDT_MASTER = process.env.USDT_MASTER_ADDRESS ?? "EQAAYQf_d4ekMhxzZ-DQeKXK
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://localhost:4000";
 
 if (!ANTHROPIC_API_KEY) {
-  console.error("ANTHROPIC_API_KEY is required");
-  process.exit(1);
+  console.warn("ANTHROPIC_API_KEY not set — users must provide their own API key");
 }
 
-const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+const anthropic = ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+  : null;
 const tonClient = new TonClient({ endpoint: TON_RPC_URL, apiKey: TON_API_KEY });
 const agentWallet = createAgentWallet(AGENT_PRIVATE_KEY);
 
@@ -145,9 +146,17 @@ const SYSTEM_PROMPT =
   "When chaining services, pass the output of one as input to the next.\n\n" +
   `Gateway: ${GATEWAY_URL}`;
 
-export async function runAgent(userMessage: string): Promise<string> {
+export async function runAgent(userMessage: string, userApiKey?: string): Promise<string> {
   // Clear payment log for this run
   paymentLog.length = 0;
+
+  const client = userApiKey
+    ? new Anthropic({ apiKey: userApiKey })
+    : anthropic;
+
+  if (!client) {
+    throw new Error("No API key available — provide an apiKey in the request body or set ANTHROPIC_API_KEY");
+  }
 
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: userMessage },
@@ -158,7 +167,7 @@ export async function runAgent(userMessage: string): Promise<string> {
   while (iteration < MAX_ITERATIONS) {
     iteration++;
 
-    const response = await anthropic.messages.create({
+    const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
@@ -228,8 +237,17 @@ async function handleToolCallWithEvents(
 export async function runAgentWithEvents(
   userMessage: string,
   sendEvent: SendEventFn,
+  userApiKey?: string,
 ): Promise<string> {
   paymentLog.length = 0;
+
+  const client = userApiKey
+    ? new Anthropic({ apiKey: userApiKey })
+    : anthropic;
+
+  if (!client) {
+    throw new Error("No API key available — provide an apiKey in the request body or set ANTHROPIC_API_KEY");
+  }
 
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: userMessage },
@@ -242,7 +260,7 @@ export async function runAgentWithEvents(
   while (iteration < MAX_ITERATIONS) {
     iteration++;
 
-    const response = await anthropic.messages.create({
+    const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
@@ -299,14 +317,14 @@ if (PORT) {
   app.use(express.json());
 
   app.post("/run", async (req, res) => {
-    const { prompt } = req.body;
+    const { prompt, apiKey } = req.body;
     if (!prompt) {
       res.status(400).json({ error: "prompt is required" });
       return;
     }
     console.log(`\n[HTTP] Agent processing: "${prompt}"`);
     try {
-      const result = await runAgent(prompt);
+      const result = await runAgent(prompt, apiKey);
       res.json({
         response: result,
         payments: paymentLog.map((p) => ({
@@ -323,7 +341,7 @@ if (PORT) {
   });
 
   app.post("/run/stream", async (req, res) => {
-    const { prompt } = req.body;
+    const { prompt, apiKey } = req.body;
     if (!prompt) {
       res.status(400).json({ error: "prompt is required" });
       return;
@@ -343,7 +361,7 @@ if (PORT) {
     };
 
     try {
-      const result = await runAgentWithEvents(prompt, sendEvent);
+      const result = await runAgentWithEvents(prompt, sendEvent, apiKey);
       sendEvent("done", {
         response: result,
         payments: paymentLog.map((p) => ({
