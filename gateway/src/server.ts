@@ -195,6 +195,61 @@ app.all("/dvm/:owner/:name", async (req: Request, res: Response) => {
     return;
   }
 
+  // Check for TON Connect payment proof (transaction already on-chain)
+  const paymentTxHash = req.headers["x-payment-tx"] as string | undefined;
+  if (paymentTxHash) {
+    console.log(`[proxy] TON Connect payment proof: ${paymentTxHash} for DVM ${dvm.name}`);
+
+    // Increment stats
+    registry.incrementCalls(dvm.id, dvm.priceUSDT);
+
+    // Broadcast event
+    broadcastEvent({
+      type: "dvm_called",
+      dvmId: dvm.id,
+      dvmName: dvm.name,
+      payer: "tonconnect",
+      amount: dvm.priceUSDT,
+      transaction: paymentTxHash,
+      timestamp: Date.now(),
+    });
+
+    // Execute code-based DVM
+    if (dvm.code) {
+      const input = { ...req.query, ...(req.body || {}) };
+      const execResult = await executeDVM(dvm.code, input as Record<string, unknown>);
+      if (!execResult.success) {
+        res.status(500).json({ error: "DVM execution failed", message: execResult.error });
+        return;
+      }
+      res.json({
+        data: execResult.data,
+        dvm: { id: dvm.id, name: dvm.name },
+        payment: { amount: dvm.priceReadable, transaction: paymentTxHash, method: "tonconnect" },
+      });
+      return;
+    }
+
+    // Forward to external endpoint
+    if (dvm.endpoint) {
+      const fetchOptions: RequestInit = { method: dvm.method, headers: { "Content-Type": "application/json" } };
+      if (dvm.method === "POST" && req.body) fetchOptions.body = JSON.stringify(req.body);
+      const url = new URL(dvm.endpoint);
+      if (req.query) {
+        for (const [key, value] of Object.entries(req.query)) {
+          if (typeof value === "string") url.searchParams.set(key, value);
+        }
+      }
+      const externalRes = await fetch(url.toString(), fetchOptions);
+      const data = await externalRes.json().catch(() => externalRes.text());
+      res.json({ data, payment: { amount: dvm.priceReadable, transaction: paymentTxHash, method: "tonconnect" } });
+      return;
+    }
+
+    res.status(500).json({ error: "DVM has no code or endpoint" });
+    return;
+  }
+
   const paymentHeader = req.headers["x-payment"] as string | undefined;
 
   // No payment → return 402

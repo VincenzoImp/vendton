@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Info } from "lucide-react";
+import { Sparkles, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Info, Wallet } from "lucide-react";
 import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useTonConnect } from "../hooks/useTonConnect";
 
 const AGENT_URL =
   import.meta.env.VITE_AGENT_URL ||
@@ -18,6 +19,7 @@ const PRESET_PROMPTS = [
 
 export default function Playground() {
   const { events, isConnected } = useWebSocket();
+  const { connected, shortAddress, connect: connectWallet, sendJettonTransfer } = useTonConnect();
   const [apiKey, setApiKey] = useState("");
   const [prompt, setPrompt] = useState("");
   const [agentResponse, setAgentResponse] = useState("");
@@ -29,6 +31,16 @@ export default function Playground() {
   const [agentSteps, setAgentSteps] = useState<
     Array<{ type: string; text: string; timestamp: number }>
   >([]);
+  const [paymentRequest, setPaymentRequest] = useState<{
+    requestId: string;
+    dvmId: string;
+    dvmName: string;
+    amount: string;
+    amountReadable: string;
+    payTo: string;
+    asset: string;
+  } | null>(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   const transactions = useMemo<Transaction[]>(
     () =>
@@ -82,9 +94,65 @@ export default function Playground() {
           (event.payments as Array<{ amount: string; dvm: string }>) ?? [],
         );
         break;
+      case "payment_required":
+        setPaymentRequest({
+          requestId: event.requestId as string,
+          dvmId: event.dvmId as string,
+          dvmName: event.dvmName as string,
+          amount: event.amount as string,
+          amountReadable: event.amountReadable as string,
+          payTo: event.payTo as string,
+          asset: event.asset as string,
+        });
+        addStep(`Payment required: ${event.amountReadable} for ${event.dvmName}`);
+        break;
+
+      case "payment_confirmed":
+        addStep(`Payment confirmed: ${event.amount} USDT`);
+        setPaymentRequest(null);
+        setPaymentProcessing(false);
+        break;
+
       case "error":
         setAgentError(event.message as string);
         break;
+    }
+  }
+
+  async function handleApprovePayment() {
+    if (!paymentRequest) return;
+    setPaymentProcessing(true);
+
+    const addStep = (text: string) => {
+      setAgentSteps((prev) => [
+        ...prev,
+        { type: "payment", text, timestamp: Date.now() },
+      ]);
+    };
+
+    try {
+      // Send Jetton transfer via TON Connect
+      const result = await sendJettonTransfer(
+        paymentRequest.payTo,      // recipient (DVM owner's Jetton wallet)
+        paymentRequest.amount,     // amount in micro-units
+        paymentRequest.asset,      // USDT Jetton master address
+      );
+
+      // Notify the agent that payment was made
+      await fetch(`${AGENT_URL}/payment-confirmed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: paymentRequest.requestId,
+          txHash: result || "tonconnect-pending",
+        }),
+      });
+
+      addStep("Payment sent via TON Connect!");
+    } catch (err) {
+      addStep(`Payment failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setPaymentProcessing(false);
+      setPaymentRequest(null);
     }
   }
 
@@ -190,6 +258,22 @@ export default function Playground() {
         </p>
       </section>
 
+      {/* Wallet Status */}
+      {connected ? (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="text-xs font-medium text-emerald-600">Wallet: {shortAddress}</span>
+        </div>
+      ) : (
+        <button
+          onClick={connectWallet}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
+          style={{ backgroundColor: "var(--color-primary)" }}
+        >
+          Connect Wallet to Pay for DVMs
+        </button>
+      )}
+
       {/* How it works */}
       <section className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
         <div className="flex items-center gap-1.5 mb-1.5">
@@ -198,9 +282,12 @@ export default function Playground() {
             How it works
           </span>
         </div>
-        <p className="text-[11px] text-[var(--color-hint)] leading-relaxed">
-          Ask a question. The agent searches the marketplace for relevant DVMs, pays with testnet USDT, and returns the combined result -- all in real time.
-        </p>
+        <ol className="text-[11px] text-[var(--color-hint)] leading-relaxed space-y-0.5 list-decimal list-inside">
+          <li>Enter your Claude API key</li>
+          <li>Connect your TON wallet</li>
+          <li>Ask anything -- Claude discovers and uses paid DVMs</li>
+          <li>Approve each payment from your wallet</li>
+        </ol>
       </section>
 
       {/* Agent Input */}
@@ -295,6 +382,59 @@ export default function Playground() {
                 {step.text}
               </motion.div>
             ))}
+          </motion.div>
+        )}
+
+        {paymentRequest && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3"
+          >
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-amber-500" />
+              <span className="text-sm font-semibold text-[var(--color-text)]">Payment Required</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-[var(--color-text)]">
+                <strong>{paymentRequest.dvmName}</strong> costs{" "}
+                <span className="text-amber-500 font-bold">{paymentRequest.amountReadable}</span>
+              </p>
+              <p className="text-xs text-[var(--color-hint)]">
+                Pay from your connected wallet to continue
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleApprovePayment}
+                disabled={paymentProcessing || !connected}
+                className="flex-1 px-4 py-2.5 rounded-xl text-white font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 bg-emerald-500"
+              >
+                {paymentProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Approve & Pay"
+                )}
+              </button>
+              <button
+                onClick={() => setPaymentRequest(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-secondary-bg)] text-[var(--color-hint)]"
+              >
+                Cancel
+              </button>
+            </div>
+            {!connected && (
+              <button
+                onClick={connectWallet}
+                className="w-full px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ backgroundColor: "var(--color-primary)" }}
+              >
+                Connect Wallet First
+              </button>
+            )}
           </motion.div>
         )}
 

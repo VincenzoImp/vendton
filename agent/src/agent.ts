@@ -1,4 +1,5 @@
 import "dotenv/config";
+import crypto from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { TonClient } from "@ton/ton";
 import { Address } from "@ton/core";
@@ -30,6 +31,14 @@ const agentWallet = createAgentWallet(AGENT_PRIVATE_KEY);
 console.log(`Agent wallet: ${agentWallet.address.toString()}`);
 
 const paymentLog: PaymentEvent[] = [];
+
+// In-memory payment requests for user-wallet flow (keyed by requestId)
+const paymentRequests = new Map<
+  string,
+  { resolve: (txHash: string) => void; reject: (reason: string) => void }
+>();
+
+const PAYMENT_TIMEOUT_MS = 120_000;
 
 function onPayment(event: PaymentEvent) {
   paymentLog.push(event);
@@ -216,26 +225,186 @@ export async function runAgent(userMessage: string, userApiKey?: string): Promis
 
 type SendEventFn = (type: string, data: unknown) => void;
 
+/**
+ * Build the canonical URL and HTTP method for a DVM call.
+ * Shared between auto-pay and user-wallet payment paths.
+ */
+async function buildDvmRequest(
+  dvmId: string,
+  params: Record<string, unknown> | undefined,
+): Promise<{ url: string; method: string; body: string | undefined }> {
+  const infoRes = await fetch(`${GATEWAY_URL}/api/dvms/${dvmId}`);
+  let method = "GET";
+  let url: string;
+
+  if (infoRes.ok) {
+    const info = await infoRes.json();
+    method = info.dvm?.method ?? "GET";
+    const slug = info.dvm?.slug || dvmId;
+    const ownerShort =
+      info.dvm?.ownerAddress?.replace(/^0:/, "").slice(0, 8).toLowerCase() ||
+      "unknown";
+    url = `${GATEWAY_URL}/dvm/${ownerShort}/${slug}`;
+  } else {
+    url = `${GATEWAY_URL}/proxy/${dvmId}`;
+  }
+
+  let body: string | undefined;
+
+  if (method === "GET" && params) {
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      queryParams.set(key, String(value));
+    }
+    url += `?${queryParams}`;
+  } else if (method === "POST" && params) {
+    body = JSON.stringify(params);
+  }
+
+  return { url, method, body };
+}
+
+/**
+ * Handle `call_dvm` in user-wallet mode: on 402, ask the frontend for payment
+ * via SSE and wait for confirmation through the /payment-confirmed endpoint.
+ */
+async function handleCallDvmWithUserPayment(
+  input: Record<string, unknown>,
+  sendEvent: SendEventFn,
+  requestId: string,
+): Promise<string> {
+  const dvmId = input.dvm_id as string;
+  const params = input.params as Record<string, unknown> | undefined;
+
+  const { url, method, body } = await buildDvmRequest(dvmId, params);
+
+  // First attempt — no payment header
+  const initialRes = await fetch(url, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body,
+  });
+
+  if (initialRes.status !== 402) {
+    const data = await initialRes.json().catch(() => initialRes.text());
+    return JSON.stringify(data, null, 2);
+  }
+
+  // Parse 402 requirements
+  const paymentRequiredHeader = initialRes.headers.get("x-payment-required");
+  let requirements: { amount: string; payTo: string; asset: string; network: string; maxTimeoutSeconds: number };
+  let dvmName: string | undefined;
+
+  if (paymentRequiredHeader) {
+    const decoded = JSON.parse(
+      Buffer.from(paymentRequiredHeader, "base64").toString("utf-8"),
+    );
+    requirements = decoded.accepts[0];
+  } else {
+    const errorBody = await initialRes.json();
+    requirements =
+      errorBody.accepts?.[0] ?? errorBody.requirements?.accepts?.[0];
+    dvmName = errorBody.dvm?.name;
+  }
+
+  if (!requirements) {
+    throw new Error("Could not parse payment requirements from 402 response");
+  }
+
+  const amountReadable =
+    (Number(requirements.amount) / 1_000_000).toFixed(2) + " USDT";
+
+  // Ask the frontend for payment via SSE
+  const paymentPromise = new Promise<string>((resolve, reject) => {
+    paymentRequests.set(requestId, { resolve, reject });
+    setTimeout(() => {
+      if (paymentRequests.has(requestId)) {
+        paymentRequests.delete(requestId);
+        reject(new Error("Payment timeout — user did not confirm in time"));
+      }
+    }, PAYMENT_TIMEOUT_MS);
+  });
+
+  sendEvent("payment_required", {
+    requestId,
+    dvmId,
+    dvmName: dvmName ?? dvmId,
+    amount: requirements.amount,
+    amountReadable,
+    payTo: requirements.payTo,
+    asset: requirements.asset,
+    network: requirements.network,
+  });
+
+  // Block until the frontend confirms payment
+  const txHash = await paymentPromise;
+
+  // Retry the DVM call with proof-of-payment header
+  const paidRes = await fetch(url, {
+    method,
+    headers: {
+      "X-PAYMENT-TX": txHash,
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    body,
+  });
+
+  const data = await paidRes.json().catch(() => paidRes.text());
+
+  sendEvent("payment_confirmed", {
+    txHash,
+    amount: amountReadable,
+    dvmName: dvmName ?? dvmId,
+  });
+
+  // Log the payment
+  paymentLog.push({
+    type: "payment",
+    dvm: url,
+    dvmName: dvmName ?? dvmId,
+    amount: requirements.amount,
+    recipient: requirements.payTo,
+    timestamp: Date.now(),
+  });
+
+  return JSON.stringify(data, null, 2);
+}
+
 async function handleToolCallWithEvents(
   name: string,
   input: Record<string, unknown>,
   sendEvent: SendEventFn,
+  requestId?: string,
 ): Promise<string> {
   sendEvent("tool_call", { tool: name, input });
 
-  const logLenBefore = paymentLog.length;
-  const result = await handleToolCall(name, input);
+  let result: string;
 
-  // Check if a payment happened during this tool call
-  if (paymentLog.length > logLenBefore) {
-    const lastPayment = paymentLog[paymentLog.length - 1];
-    sendEvent("payment", {
-      amount: (Number(lastPayment.amount) / 1_000_000).toFixed(2) + " USDT",
-      dvm: lastPayment.dvmName ?? lastPayment.dvm,
-    });
+  // In user-wallet mode (requestId present), intercept call_dvm to delegate
+  // payment to the frontend instead of auto-paying with the agent wallet.
+  if (name === "call_dvm" && requestId) {
+    try {
+      result = await handleCallDvmWithUserPayment(input, sendEvent, requestId);
+    } catch (error) {
+      result = `Error calling DVM: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  } else {
+    const logLenBefore = paymentLog.length;
+    result = await handleToolCall(name, input);
+
+    // Check if a payment happened during this tool call (auto-pay fallback)
+    if (paymentLog.length > logLenBefore) {
+      const lastPayment = paymentLog[paymentLog.length - 1];
+      sendEvent("payment", {
+        amount:
+          (Number(lastPayment.amount) / 1_000_000).toFixed(2) + " USDT",
+        dvm: lastPayment.dvmName ?? lastPayment.dvm,
+      });
+    }
   }
 
-  const truncated = result.length > 200 ? result.slice(0, 200) + "..." : result;
+  const truncated =
+    result.length > 200 ? result.slice(0, 200) + "..." : result;
   sendEvent("tool_result", { tool: name, result: truncated });
 
   return result;
