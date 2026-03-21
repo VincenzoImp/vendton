@@ -23,7 +23,7 @@ const WS_URL =
   import.meta.env.VITE_WS_URL ||
   (typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "ws://localhost:4000/ws"
-    : "wss://mesh402-gateway.up.railway.app/ws");
+    : "wss://vendton-gateway.up.railway.app/ws");
 const MAX_EVENTS = 100;
 const MAX_RECONNECT_DELAY = 30_000;
 const BASE_RECONNECT_DELAY = 1_000;

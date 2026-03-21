@@ -101,7 +101,7 @@ export default function Deploy() {
             DVM Deployed!
           </h2>
           <p className="text-sm text-[var(--color-hint)]">
-            <strong>{name}</strong> is now live on the mesh402 marketplace.
+            <strong>{name}</strong> is now live on the VendTON marketplace.
             AI agents can discover and pay for it automatically.
           </p>
           <button
@@ -298,7 +298,7 @@ export default function Deploy() {
               type="text"
               value={ensName}
               onChange={(e) => setEnsName(e.target.value)}
-              placeholder="mydvm.mesh402.eth"
+              placeholder="mydvm.vendton.eth"
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
           </div>

@@ -4,7 +4,7 @@ const GATEWAY_URL =
   import.meta.env.VITE_GATEWAY_URL ||
   (typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:4000"
-    : "https://mesh402-gateway.up.railway.app");
+    : "https://vendton-gateway.up.railway.app");
 
 export interface DVM {
   id: string;

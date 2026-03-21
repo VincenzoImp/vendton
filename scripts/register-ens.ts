@@ -1,5 +1,5 @@
 /**
- * Register mesh402.eth on ENS Sepolia testnet and set text records.
+ * Register vendton.eth on ENS Sepolia testnet and set text records.
  * Uses @ensdomains/ensjs for correct ABI handling.
  *
  * Usage:
@@ -17,7 +17,7 @@ import { randomSecret } from "@ensdomains/ensjs/utils";
 // --- Config ---
 const PRIVATE_KEY = "0x101dd834ae7067d5a10ae39be95dbd917b0642b1412a96c7a35235668db9b384" as Hex;
 const RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com";
-const LABEL = "mesh402";
+const LABEL = "vendton";
 const DURATION_SECONDS = 365 * 24 * 60 * 60; // 1 year
 const TON_ADDRESS = "EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD";
 
@@ -93,7 +93,7 @@ async function main() {
   console.log("  Commitment matured!     ");
 
   // Step 5: Register
-  console.log("\n--- Registering mesh402.eth ---");
+  console.log("\n--- Registering vendton.eth ---");
   const value = (price.base * 120n) / 100n; // 20% buffer
   const registerTx = await registerName(walletClient, {
     name: `${LABEL}.eth`,
@@ -117,7 +117,7 @@ async function setTextRecords() {
   const { namehash } = await import("viem");
   const { normalize } = await import("viem/ens");
 
-  const node = namehash(normalize("mesh402.eth"));
+  const node = namehash(normalize("vendton.eth"));
   const PUBLIC_RESOLVER = "0xE99638b40E4Fff0129D56f03b55b6bbC4BBE49b5" as Hex;
 
   const resolverAbi = [
@@ -146,8 +146,8 @@ async function setTextRecords() {
 
   const records = [
     { key: "address.ton", value: TON_ADDRESS },
-    { key: "description", value: "mesh402 — Open marketplace for AI agent services on TON" },
-    { key: "url", value: "https://mesh402.vercel.app" },
+    { key: "description", value: "vendton — Open marketplace for AI agent services on TON" },
+    { key: "url", value: "https://vendton.vercel.app" },
   ];
 
   console.log("\n--- Setting text records ---");
@@ -177,9 +177,9 @@ async function setTextRecords() {
   }
 
   console.log("\n=== DONE ===");
-  console.log(`mesh402.eth registered on Sepolia`);
+  console.log(`vendton.eth registered on Sepolia`);
   console.log(`TON address: ${TON_ADDRESS}`);
-  console.log(`View: https://sepolia.app.ens.domains/mesh402.eth`);
+  console.log(`View: https://sepolia.app.ens.domains/vendton.eth`);
 }
 
 main().catch((err) => {

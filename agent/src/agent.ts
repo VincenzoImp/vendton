@@ -134,7 +134,7 @@ async function handleToolCall(
 const MAX_ITERATIONS = 15;
 
 const SYSTEM_PROMPT =
-  "You are an AI assistant on the mesh402 marketplace — an open platform where users and AI agents " +
+  "You are an AI assistant on the VendTON marketplace — an open platform where users and AI agents " +
   "discover, use, and pay for DVMs (Data Vending Machines) on the TON blockchain using USDT.\n\n" +
   "Your workflow:\n" +
   "1. ALWAYS start by discovering available DVMs using discover_dvms\n" +

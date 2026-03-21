@@ -70,7 +70,7 @@ class DVMRegistry {
 
     // Auto-generate ENS name: <dvm>.<owner>.<platform>.eth
     const ownerShort = input.ownerAddress.replace(/^0:/, "").slice(0, 8).toLowerCase();
-    const ensName = input.ensName || `${slug}.${ownerShort}.mesh402.eth`;
+    const ensName = input.ensName || `${slug}.${ownerShort}.vendton.eth`;
 
     const dvm: DVMRegistration = {
       id,
@@ -226,7 +226,7 @@ class DVMRegistry {
       tags: ["weather", "data", "geolocation"],
       priceUSDT: "100000",
       ownerAddress: defaultOwner,
-      ensName: "weather.eqawwaqaaz.mesh402.eth",
+      ensName: "weather.eqawwaqaaz.vendton.eth",
       inputSchema: { type: "object", properties: { city: { type: "string", description: "City name (e.g. Paris, Tokyo, London)" } }, required: ["city"] },
       outputExample: { city: "Paris", temperature: 22, feelsLike: 20, condition: "Sunny", humidity: "45%", wind: "12 km/h NW", visibility: "10 km", uvIndex: "3" },
       code: `const city = input.city || input.q || "London";
@@ -255,7 +255,7 @@ return {
       tags: ["crypto", "data", "finance"],
       priceUSDT: "50000",
       ownerAddress: defaultOwner,
-      ensName: "crypto-price.eqawwaqaaz.mesh402.eth",
+      ensName: "crypto-price.eqawwaqaaz.vendton.eth",
       inputSchema: { type: "object", properties: { coin: { type: "string", description: "Coin ID (e.g. bitcoin, ethereum, the-open-network)" } }, required: ["coin"] },
       outputExample: { coin: "bitcoin", price_usd: 67000, price_eur: 62000, price_btc: 1, change_24h: "2.50%", market_cap_usd: 1300000000000 },
       code: `const coin = (input.coin || input.q || "bitcoin").toLowerCase();

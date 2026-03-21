@@ -304,7 +304,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
         ensName,
         tonAddress: dvm.ownerAddress,
         dvm: { id: dvm.id, name: dvm.name, price: dvm.priceReadable, description: dvm.description },
-        source: "mesh402-registry",
+        source: "vendton-registry",
       });
     }
 
@@ -340,7 +340,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
-    name: "mesh402-gateway",
+    name: "vendton-gateway",
     dvms: registry.getAll().length,
     uptime: Math.floor((Date.now() - startTime) / 1000),
     wsClients: wsClients.size,
@@ -356,7 +356,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 registry.seed();
 
 server.listen(config.port, () => {
-  console.log(`\nmesh402 gateway listening on port ${config.port}`);
+  console.log(`\nVendTON gateway listening on port ${config.port}`);
   console.log(`TON RPC: ${config.tonRpcUrl}`);
   console.log(`WebSocket: ws://localhost:${config.port}/ws`);
   console.log(`\nEndpoints:`);

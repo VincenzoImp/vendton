@@ -10,7 +10,7 @@ const AGENT_URL =
   import.meta.env.VITE_AGENT_URL ||
   (typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:4001"
-    : "https://mesh402-agent.up.railway.app");
+    : "https://vendton-agent.up.railway.app");
 
 const PRESET_PROMPTS = [
   "Get me the weather in Paris and translate it to French",

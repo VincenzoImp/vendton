@@ -8,7 +8,7 @@ export default function Header() {
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
           <Network className="w-5 h-5 text-white" />
         </div>
-        <span className="text-lg font-bold tracking-tight">mesh402</span>
+        <span className="text-lg font-bold tracking-tight">VendTON</span>
       </div>
       <TonConnectButton />
     </header>

@@ -1,4 +1,4 @@
-# mesh402
+# VendTON
 
 **Open marketplace where AI agents and users discover, use, and pay for DVMs (Data Vending Machines) on TON.**
 
@@ -15,13 +15,13 @@ x402 (Coinbase's HTTP payment protocol) exists on Ethereum and Solana. It does n
 
 ## The Solution
 
-mesh402 is a community-driven marketplace for paid AI DVMs (Data Vending Machines) on TON:
+VendTON is a community-driven marketplace for paid AI DVMs (Data Vending Machines) on TON:
 
 1. **DVM providers** publish their APIs, set prices in USDT, connect their wallet → earn every time someone calls their DVM
 2. **Users** bring their own Claude API key, connect their TON wallet, ask Claude anything → Claude discovers and pays for DVMs autonomously
 3. **Autonomous agents** with their own wallets browse and pay for DVMs via the gateway API
 
-DVMs persist in a SQLite database. Payments settle in USDT on TON via x402. Identity via ENS (`mesh402.eth` registered on Sepolia with `address.ton` text record).
+DVMs persist in a SQLite database. Payments settle in USDT on TON via x402. Identity via ENS (`vendton.eth` registered on Sepolia with `address.ton` text record).
 
 ## How It Works
 
@@ -47,7 +47,7 @@ DVMs persist in a SQLite database. Payments settle in USDT on TON via x402. Iden
 ## Architecture
 
 ```
-mesh402/
+vendton/
 ├── packages/ton/       @x402/ton SDK — client, facilitator, middleware
 ├── gateway/            Express + SQLite + WebSocket + x402 proxy
 ├── agent/              Claude with tool use + TON wallet
@@ -92,9 +92,9 @@ Anyone can deploy additional DVMs via the Deploy page or API. Write JavaScript, 
 - 10 USDT max per transaction
 
 **ENS integration:**
-- `mesh402.eth` registered on Sepolia testnet
+- `vendton.eth` registered on Sepolia testnet
 - `address.ton` text record for cross-chain identity
-- Agent tool: `resolve_ens("weather.mesh402.eth")`
+- Agent tool: `resolve_ens("weather.vendton.eth")`
 
 **Stack:**
 - TypeScript across the full stack
@@ -109,7 +109,7 @@ Anyone can deploy additional DVMs via the Deploy page or API. Write JavaScript, 
 
 Your Cocoon AI agents run on $82.5M of GPU infrastructure. They can think and plan — but they cannot pay.
 
-mesh402 is the payment layer those agents need. When a Cocoon agent needs weather data, a translation, or any external capability — mesh402 handles discovery, payment, and settlement autonomously. No human approval. Just USDT on TON.
+VendTON is the payment layer those agents need. When a Cocoon agent needs weather data, a translation, or any external capability — VendTON handles discovery, payment, and settlement autonomously. No human approval. Just USDT on TON.
 
 - First x402 implementation on TON — first-mover on the largest untapped chain
 - USDT transfers cost ~0.01-0.05 TON vs $2+ on Ethereum

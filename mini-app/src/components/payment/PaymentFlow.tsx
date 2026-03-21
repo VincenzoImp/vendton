@@ -180,7 +180,7 @@ export default function PaymentFlow({
               animate={{ opacity: 1 }}
               className="text-sm text-center text-[var(--color-hint)]"
             >
-              See how mesh402 handles paid DVM requests
+              See how VendTON handles paid DVM requests
             </motion.p>
           )}
         </AnimatePresence>

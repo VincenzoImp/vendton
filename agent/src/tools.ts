@@ -4,7 +4,7 @@ export const meshAgentTools: Anthropic.Tool[] = [
   {
     name: "discover_dvms",
     description:
-      "Search the mesh402 marketplace for DVMs (Data Vending Machines) by capability, tags, or description. " +
+      "Search the VendTON marketplace for DVMs (Data Vending Machines) by capability, tags, or description. " +
       "Returns matching DVMs with their prices, IDs, and descriptions. " +
       "Always call this first to find available DVMs before calling them.",
     input_schema: {
@@ -30,7 +30,7 @@ export const meshAgentTools: Anthropic.Tool[] = [
   {
     name: "call_dvm",
     description:
-      "Call a mesh402 DVM (Data Vending Machine) by its ID. The payment is handled automatically via the x402 protocol. " +
+      "Call a VendTON DVM (Data Vending Machine) by its ID. The payment is handled automatically via the x402 protocol. " +
       "Pass query parameters as part of the body for GET DVMs, or as JSON body for POST DVMs. " +
       "Returns the DVM response data.",
     input_schema: {
@@ -66,7 +66,7 @@ export const meshAgentTools: Anthropic.Tool[] = [
       properties: {
         name: {
           type: "string",
-          description: "ENS name (e.g. weather.mesh402.eth)",
+          description: "ENS name (e.g. weather.vendton.eth)",
         },
       },
       required: ["name"],
