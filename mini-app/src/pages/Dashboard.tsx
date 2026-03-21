@@ -16,7 +16,9 @@ export default function Dashboard() {
     return events.map((evt, i) => ({
       id: `${evt.transaction}-${i}`,
       service: `Payment to ${evt.payTo ? evt.payTo.slice(0, 8) + "..." : "unknown"}`,
-      amount: `${evt.amount} ${evt.asset}`,
+      amount: Number(evt.amount) > 1000
+        ? `${(Number(evt.amount) / 1_000_000).toFixed(2)} USDT`
+        : `${evt.amount} USDT`,
       status: "confirmed" as const,
       timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
       txHash: evt.transaction,

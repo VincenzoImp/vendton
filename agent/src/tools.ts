@@ -46,7 +46,7 @@ export const agentTools: Anthropic.Tool[] = [
           description: "Base URL of the API server (e.g. http://localhost:3002)",
         },
       },
-      required: ["api_url"],
+      required: [],
     },
   },
 ];

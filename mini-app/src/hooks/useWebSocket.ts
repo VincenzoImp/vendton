@@ -17,7 +17,11 @@ interface UseWebSocketReturn {
   lastEvent: SettlementEvent | null;
 }
 
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:3001/ws";
+const WS_URL =
+  import.meta.env.VITE_WS_URL ||
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "ws://localhost:3001/ws"
+    : "wss://x402-ton-facilitator.up.railway.app/ws");
 const MAX_EVENTS = 100;
 const MAX_RECONNECT_DELAY = 30_000;
 const BASE_RECONNECT_DELAY = 1_000;

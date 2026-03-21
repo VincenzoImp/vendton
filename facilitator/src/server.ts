@@ -2,7 +2,7 @@ import express, { type Request, type Response, type NextFunction } from "express
 import cors from "cors";
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
-import { Address, Cell, beginCell, Slice } from "@ton/core";
+import { Address, Cell, beginCell } from "@ton/core";
 import { WalletContractV5R1 } from "@ton/ton";
 import nacl from "tweetnacl";
 import { z } from "zod";
@@ -383,9 +383,7 @@ app.use(express.json({ limit: "1mb" }));
 
 // Request logging
 app.use((req, _res, next) => {
-  if (req.method !== "GET" || req.path === "/health") {
-    // skip noisy health checks
-  } else {
+  if (req.path !== "/health") {
     console.log(`${req.method} ${req.path}`);
   }
   next();

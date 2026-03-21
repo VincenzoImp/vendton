@@ -13,7 +13,7 @@ const FACILITATOR_URL =
   process.env.FACILITATOR_URL || "http://localhost:3001";
 const USDT_ASSET_ADDRESS =
   process.env.USDT_ASSET_ADDRESS ||
-  "EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"; // Testnet USDT
+  "EQAAYQf_d4ekMhxzZ-DQeKXK_KMFwdmK7SvFRxNlkHhN0VBi"; // Testnet USDT
 const PAY_TO_ADDRESS =
   process.env.PAY_TO_ADDRESS ||
   "0QBqSpvo4S87mX9tjHaG4zhYZeORhVhMapBJpnMZ64jbrLUo";

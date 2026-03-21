@@ -203,20 +203,17 @@ export default function ManualPay() {
 
       setPayStates((s) => ({ ...s, [service.id]: "settling" }));
 
-      // Extract boc from result
+      // TON Connect broadcasts the transaction directly on-chain.
+      // The x402 agent flow uses pre-signed BoCs passed to the facilitator,
+      // but for manual wallet payments the Jetton transfer goes directly
+      // from the user's wallet to the merchant.
       const txBoc = result.boc;
 
-      // Wait a moment for the transaction to propagate
-      await new Promise((r) => setTimeout(r, 5000));
-
-      // Now retry the API call — the payment is on-chain
-      // For x402, we'd normally pass the payment proof, but since TON Connect
-      // submitted the tx directly, the server can verify it on-chain
       setPayStates((s) => ({ ...s, [service.id]: "success" }));
       setTxHashes((s) => ({ ...s, [service.id]: txBoc || "confirmed" }));
       setResponses((s) => ({
         ...s,
-        [service.id]: `Payment of ${payment.amount} sent successfully to ${payment.payTo.slice(0, 10)}...${payment.payTo.slice(-6)}`,
+        [service.id]: `Payment of ${payment.amount} sent on-chain. The USDT Jetton transfer is being processed by the TON network.`,
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Payment failed";

@@ -85,6 +85,14 @@ export async function makePayableRequest(
     throw new Error("Could not parse payment requirements from 402 response");
   }
 
+  // Spending limits
+  const MAX_PER_TX = 10_000_000; // 10 USDT max per transaction
+  if (BigInt(requirements.amount) > BigInt(MAX_PER_TX)) {
+    throw new Error(
+      `Amount ${requirements.amount} exceeds per-transaction limit of ${MAX_PER_TX}`,
+    );
+  }
+
   // Create payment
   const seqno = await getWalletSeqno(tonClient, agentWallet.wallet);
   const jettonMaster = Address.parse(requirements.asset);

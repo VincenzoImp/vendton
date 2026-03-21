@@ -18,7 +18,7 @@ const TON_API_KEY = process.env.TON_API_KEY;
 const AGENT_PRIVATE_KEY = process.env.AGENT_PRIVATE_KEY;
 const USDT_MASTER =
   process.env.USDT_MASTER_ADDRESS ??
-  "kQD0GKBM8ZbryVk2aESmzfU6b9b_8era_IkvBSELujFZPsyy";
+  "EQAAYQf_d4ekMhxzZ-DQeKXK_KMFwdmK7SvFRxNlkHhN0VBi";
 const DEMO_API_URL = process.env.DEMO_API_URL ?? "http://localhost:3002";
 
 if (!ANTHROPIC_API_KEY) {
@@ -167,48 +167,49 @@ const PORT = process.env.AGENT_PORT ? parseInt(process.env.AGENT_PORT) : null;
 
 if (PORT) {
   // HTTP server — the mini-app AgentDemo page can POST prompts
-  import("express").then(({ default: express }) => {
-    import("cors").then(({ default: cors }) => {
-      const app = express();
-      app.use(cors({ origin: "*" }));
-      app.use(express.json());
+  const [{ default: express }, { default: cors }] = await Promise.all([
+    import("express"),
+    import("cors"),
+  ]);
 
-      app.post("/run", async (req, res) => {
-        const { prompt } = req.body;
-        if (!prompt) {
-          res.status(400).json({ error: "prompt is required" });
-          return;
-        }
-        console.log(`\n[HTTP] Agent processing: "${prompt}"`);
-        try {
-          const result = await runAgent(prompt);
-          res.json({
-            response: result,
-            payments: paymentLog.map((p) => ({
-              amount: (Number(p.amount) / 1_000_000).toFixed(2) + " USDT",
-              service: p.service,
-              timestamp: p.timestamp,
-            })),
-          });
-        } catch (err) {
-          res.status(500).json({
-            error: err instanceof Error ? err.message : "Agent failed",
-          });
-        }
-      });
+  const app = express();
+  app.use(cors({ origin: "*" }));
+  app.use(express.json());
 
-      app.get("/health", (_req, res) => {
-        res.json({
-          status: "ok",
-          wallet: agentWallet.address.toString(),
-        });
+  app.post("/run", async (req, res) => {
+    const { prompt } = req.body;
+    if (!prompt) {
+      res.status(400).json({ error: "prompt is required" });
+      return;
+    }
+    console.log(`\n[HTTP] Agent processing: "${prompt}"`);
+    try {
+      const result = await runAgent(prompt);
+      res.json({
+        response: result,
+        payments: paymentLog.map((p) => ({
+          amount: (Number(p.amount) / 1_000_000).toFixed(2) + " USDT",
+          service: p.service,
+          timestamp: p.timestamp,
+        })),
       });
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Agent failed",
+      });
+    }
+  });
 
-      app.listen(PORT, () => {
-        console.log(`Agent HTTP server on port ${PORT}`);
-        console.log(`POST /run { "prompt": "..." }`);
-      });
+  app.get("/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      wallet: agentWallet.address.toString(),
     });
+  });
+
+  app.listen(PORT, () => {
+    console.log(`Agent HTTP server on port ${PORT}`);
+    console.log(`POST /run { "prompt": "..." }`);
   });
 } else {
   // CLI mode

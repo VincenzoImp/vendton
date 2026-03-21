@@ -4,7 +4,7 @@ import { useWebSocket } from "../hooks/useWebSocket";
 import PaymentFlow from "../components/payment/PaymentFlow";
 import { Bot, CreditCard, BarChart3, Zap, Wifi, WifiOff } from "lucide-react";
 
-const USDT_CONTRACT = "EQBynBO23ywHy_CgarY9NK9FTz0yDsG82PtcbSTQgGoXwiuA";
+const USDT_CONTRACT = "EQAAYQf_d4ekMhxzZ-DQeKXK_KMFwdmK7SvFRxNlkHhN0VBi";
 const NETWORK = "TON Testnet";
 
 const navCards = [
