@@ -31,7 +31,7 @@ export default function Playground() {
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentError, setAgentError] = useState("");
   const [agentPayments, setAgentPayments] = useState<
-    Array<{ amount: string; skill: string }>
+    Array<{ amount: string; dvm: string }>
   >([]);
   const [agentSteps, setAgentSteps] = useState<
     Array<{ type: string; text: string; timestamp: number }>
@@ -41,7 +41,7 @@ export default function Playground() {
     () =>
       events.map((evt, i) => ({
         id: `${evt.transaction}-${i}`,
-        skill: evt.skillName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
+        dvm: evt.dvmName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
         amount: `${(Number(evt.amount) / 1_000_000).toFixed(2)} USDT`,
         status: "confirmed" as const,
         timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
@@ -74,13 +74,13 @@ export default function Playground() {
         addStep("Agent is analyzing your request...");
         break;
       case "tool_call":
-        if (event.tool === "discover_skills") {
+        if (event.tool === "discover_dvms") {
           addStep(
             `Searching marketplace for "${event.input && (event.input as Record<string, unknown>).query}"...`,
           );
-        } else if (event.tool === "call_skill") {
+        } else if (event.tool === "call_dvm") {
           addStep(
-            `Calling skill ${event.input && (event.input as Record<string, unknown>).skill_id}...`,
+            `Calling DVM ${event.input && (event.input as Record<string, unknown>).dvm_id}...`,
           );
         } else if (event.tool === "check_balance") {
           addStep("Checking USDT balance...");
@@ -92,12 +92,12 @@ export default function Playground() {
         addStep(`Got result from ${event.tool}`);
         break;
       case "payment":
-        addStep(`Paid ${event.amount} for ${event.skill}`);
+        addStep(`Paid ${event.amount} for ${event.dvm}`);
         break;
       case "done":
         setAgentResponse(event.response as string);
         setAgentPayments(
-          (event.payments as Array<{ amount: string; skill: string }>) ?? [],
+          (event.payments as Array<{ amount: string; dvm: string }>) ?? [],
         );
         break;
       case "error":
@@ -173,7 +173,7 @@ export default function Playground() {
             AI Playground
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
-            Connect your Claude API key and TON wallet to use paid skills
+            Connect your Claude API key and TON wallet to use paid DVMs
           </p>
         </div>
       </section>
@@ -224,7 +224,7 @@ export default function Playground() {
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             <Wallet className="w-4 h-4" />
-            Connect wallet to pay for skills
+            Connect wallet to pay for DVMs
           </button>
         )}
       </section>
@@ -240,7 +240,7 @@ export default function Playground() {
         <ol className="space-y-1 text-[11px] text-[var(--color-hint)] list-decimal list-inside">
           <li>Enter your Claude API key (never stored, used for this session only)</li>
           <li>Connect your TON wallet</li>
-          <li>Ask anything — Claude will discover and use paid skills from the marketplace</li>
+          <li>Ask anything — Claude will discover and use paid DVMs from the marketplace</li>
           <li>Payments happen on TON testnet with USDT</li>
         </ol>
       </section>
@@ -298,7 +298,7 @@ export default function Playground() {
           >
             <div className="flex items-center gap-2 text-purple-600 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Agent is discovering skills and making payments...
+              Agent is discovering DVMs and making payments...
             </div>
           </motion.div>
         )}
@@ -374,7 +374,7 @@ export default function Playground() {
                   >
                     <span className="flex items-center gap-1">
                       <ArrowRight className="w-2.5 h-2.5 text-[var(--color-hint)]" />
-                      <span className="truncate">{p.skill}</span>
+                      <span className="truncate">{p.dvm}</span>
                     </span>
                     <span className="font-mono font-medium shrink-0 ml-2">{p.amount}</span>
                   </div>

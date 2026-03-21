@@ -15,7 +15,7 @@ const steps = [
     label: "Request",
     icon: Globe,
     color: "#3390EC",
-    description: "Agent discovers and calls a paid skill",
+    description: "Agent discovers and calls a paid DVM",
   },
   {
     id: "402",
@@ -43,7 +43,7 @@ const steps = [
     label: "200 OK",
     icon: CheckCircle2,
     color: "#3390EC",
-    description: "Gateway verifies payment and returns skill data",
+    description: "Gateway verifies payment and returns DVM data",
   },
 ];
 
@@ -180,7 +180,7 @@ export default function PaymentFlow({
               animate={{ opacity: 1 }}
               className="text-sm text-center text-[var(--color-hint)]"
             >
-              See how mesh402 handles paid skill requests
+              See how mesh402 handles paid DVM requests
             </motion.p>
           )}
         </AnimatePresence>

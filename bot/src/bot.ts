@@ -14,21 +14,21 @@ const bot = new Bot(BOT_TOKEN);
 bot.command("start", async (ctx) => {
   await ctx.reply(
     "Welcome to mesh402!\n\n" +
-      "The open marketplace for paid AI skills on TON.\n\n" +
-      "Browse skills, deploy your own API to earn USDT, or use the AI Playground to call paid skills with your Claude API key.\n\n" +
+      "The open marketplace for paid AI DVMs (Data Vending Machines) on TON.\n\n" +
+      "Browse DVMs, deploy your own API to earn USDT, or use the AI Playground to call paid DVMs with your Claude API key.\n\n" +
       "Tap below to get started:",
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Browse Skills",
+              text: "Browse DVMs",
               web_app: { url: MINI_APP_URL },
             },
           ],
           [
             {
-              text: "Deploy a Skill",
+              text: "Deploy a DVM",
               web_app: { url: `${MINI_APP_URL}/deploy` },
             },
           ],
@@ -46,7 +46,7 @@ bot.command("start", async (ctx) => {
 
 bot.command("deploy", async (ctx) => {
   await ctx.reply(
-    "Deploy your API as a paid skill and start earning USDT:",
+    "Deploy your API as a paid DVM and start earning USDT:",
     {
       reply_markup: {
         inline_keyboard: [
@@ -62,8 +62,8 @@ bot.command("deploy", async (ctx) => {
   );
 });
 
-bot.command("skills", async (ctx) => {
-  await ctx.reply("Browse available paid skills on the marketplace:", {
+bot.command("dvms", async (ctx) => {
+  await ctx.reply("Browse available paid DVMs on the marketplace:", {
     reply_markup: {
       inline_keyboard: [
         [
@@ -79,7 +79,7 @@ bot.command("skills", async (ctx) => {
 
 bot.command("playground", async (ctx) => {
   await ctx.reply(
-    "Use the AI Playground — bring your Claude API key and explore paid skills:",
+    "Use the AI Playground — bring your Claude API key and explore paid DVMs:",
     {
       reply_markup: {
         inline_keyboard: [
@@ -114,8 +114,8 @@ bot.command("help", async (ctx) => {
   await ctx.reply(
     "mesh402 Bot Commands:\n\n" +
       "/start — Welcome & open app\n" +
-      "/skills — Browse paid skills\n" +
-      "/deploy — Publish your API as a skill\n" +
+      "/dvms — Browse paid DVMs\n" +
+      "/deploy — Publish your API as a DVM\n" +
       "/playground — AI Playground with Claude\n" +
       "/dashboard — Earnings & spending\n" +
       "/help — This message",

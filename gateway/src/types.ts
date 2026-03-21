@@ -1,4 +1,4 @@
-export interface SkillRegistration {
+export interface DVMRegistration {
   id: string;
   name: string;
   slug: string;
@@ -19,7 +19,7 @@ export interface SkillRegistration {
   outputExample?: Record<string, unknown>;
 }
 
-export interface SkillQuery {
+export interface DVMQuery {
   q?: string;
   tags?: string[];
   maxPrice?: string;

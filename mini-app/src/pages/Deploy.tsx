@@ -2,11 +2,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlusCircle, CheckCircle2, Loader2, AlertTriangle, Rocket, Code2, Globe } from "lucide-react";
 import { useTonConnect } from "../hooks/useTonConnect";
-import { useSkills } from "../hooks/useSkills";
+import { useDVMs } from "../hooks/useDVMs";
 
 const AVAILABLE_TAGS = ["weather", "data", "ai", "nlp", "translation", "entertainment", "sentiment", "text", "finance", "health", "image"];
 
-const CODE_PLACEHOLDER = `// Your skill receives 'input' with query params and body
+const CODE_PLACEHOLDER = `// Your DVM receives 'input' with query params and body
 // Return any JSON — callers pay your price per call
 
 const city = input.city || "London";
@@ -16,7 +16,7 @@ return { city, temp: data.current_condition[0].temp_C };`;
 
 export default function Deploy() {
   const { connected, connect, address } = useTonConnect();
-  const { register } = useSkills();
+  const { register } = useDVMs();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -49,7 +49,7 @@ export default function Deploy() {
     }
 
     if (!code.trim() && !endpoint.trim()) {
-      setError("Provide either skill code or an external API URL");
+      setError("Provide either DVM code or an external API URL");
       return;
     }
 
@@ -98,7 +98,7 @@ export default function Deploy() {
             <CheckCircle2 className="w-12 h-12 text-emerald-500" />
           </div>
           <h2 className="text-xl font-bold text-[var(--color-text)]">
-            Skill Deployed!
+            DVM Deployed!
           </h2>
           <p className="text-sm text-[var(--color-hint)]">
             <strong>{name}</strong> is now live on the mesh402 marketplace.
@@ -118,7 +118,7 @@ export default function Deploy() {
             className="px-6 py-3 rounded-xl text-white font-semibold text-sm"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            Deploy Another Skill
+            Deploy Another DVM
           </button>
         </motion.div>
       </div>
@@ -134,7 +134,7 @@ export default function Deploy() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-[var(--color-text)]">
-            Deploy Skill
+            Deploy DVM
           </h1>
           <p className="text-xs text-[var(--color-hint)]">
             Vercel for paid API endpoints — write code, set a price, earn USDT
@@ -157,7 +157,7 @@ export default function Deploy() {
           {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider mb-1">
-              Skill Name *
+              DVM Name *
             </label>
             <input
               type="text"
@@ -176,7 +176,7 @@ export default function Deploy() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What does your skill do?"
+              placeholder="What does your DVM do?"
               rows={3}
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none resize-none"
             />
@@ -187,7 +187,7 @@ export default function Deploy() {
             <div className="flex items-center gap-2 mb-1">
               <Code2 className="w-3.5 h-3.5 text-green-400" />
               <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-                Skill Code (JavaScript)
+                DVM Code (JavaScript)
               </label>
             </div>
             <textarea
@@ -298,7 +298,7 @@ export default function Deploy() {
               type="text"
               value={ensName}
               onChange={(e) => setEnsName(e.target.value)}
-              placeholder="myskill.mesh402.eth"
+              placeholder="mydvm.mesh402.eth"
               className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
           </div>

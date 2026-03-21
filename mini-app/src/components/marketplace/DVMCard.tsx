@@ -1,9 +1,9 @@
 import { Tag } from "lucide-react";
-import type { Skill } from "../../hooks/useSkills";
+import type { DVM } from "../../hooks/useDVMs";
 
-interface SkillCardProps {
-  skill: Skill;
-  onCall?: (skill: Skill) => void;
+interface DVMCardProps {
+  dvm: DVM;
+  onCall?: (dvm: DVM) => void;
   compact?: boolean;
 }
 
@@ -22,7 +22,7 @@ const tagColors: Record<string, string> = {
   geolocation: "#0EA5E9",
 };
 
-export default function SkillCard({ skill, onCall, compact }: SkillCardProps) {
+export default function DVMCard({ dvm, onCall, compact }: DVMCardProps) {
   return (
     <div className="rounded-xl bg-[var(--color-secondary-bg)] overflow-hidden">
       <div className="p-4">
@@ -30,26 +30,26 @@ export default function SkillCard({ skill, onCall, compact }: SkillCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-[var(--color-text)] truncate">
-                {skill.name}
+                {dvm.name}
               </h3>
               <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-medium">
-                {skill.priceReadable}
+                {dvm.priceReadable}
               </span>
             </div>
-            {skill.ensName && (
+            {dvm.ensName && (
               <p className="text-[10px] font-mono text-purple-500 mt-0.5">
-                {skill.ensName}
+                {dvm.ensName}
               </p>
             )}
             {!compact && (
               <p className="text-xs text-[var(--color-hint)] mt-1 line-clamp-2">
-                {skill.description}
+                {dvm.description}
               </p>
             )}
           </div>
           {onCall && (
             <button
-              onClick={() => onCall(skill)}
+              onClick={() => onCall(dvm)}
               className="shrink-0 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-all active:scale-[0.95]"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
@@ -60,7 +60,7 @@ export default function SkillCard({ skill, onCall, compact }: SkillCardProps) {
 
         {!compact && (
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            {skill.tags.map((tag) => (
+            {dvm.tags.map((tag) => (
               <span
                 key={tag}
                 className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium"
@@ -78,11 +78,11 @@ export default function SkillCard({ skill, onCall, compact }: SkillCardProps) {
 
         {!compact && (
           <div className="flex items-center gap-3 mt-2 text-[10px] text-[var(--color-hint)]">
-            <span>{skill.callCount} calls</span>
-            <span>{skill.method}</span>
-            {skill.totalRevenue !== "0" && (
+            <span>{dvm.callCount} calls</span>
+            <span>{dvm.method}</span>
+            {dvm.totalRevenue !== "0" && (
               <span>
-                {(Number(skill.totalRevenue) / 1_000_000).toFixed(2)} USDT earned
+                {(Number(dvm.totalRevenue) / 1_000_000).toFixed(2)} USDT earned
               </span>
             )}
           </div>

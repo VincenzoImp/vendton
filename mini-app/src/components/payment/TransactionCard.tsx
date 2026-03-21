@@ -2,7 +2,7 @@ import { CheckCircle2, Clock, XCircle, ExternalLink } from "lucide-react";
 
 export interface Transaction {
   id: string;
-  skill: string;
+  dvm: string;
   amount: string;
   status: "pending" | "confirmed" | "failed";
   timestamp: number;
@@ -21,7 +21,7 @@ function formatTime(ts: number): string {
 }
 
 export default function TransactionCard({
-  skill,
+  dvm,
   amount,
   status,
   timestamp,
@@ -44,7 +44,7 @@ export default function TransactionCard({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-[var(--color-text)] truncate">
-          {skill}
+          {dvm}
         </p>
         <div className="flex items-center gap-1">
           <p className="text-xs text-[var(--color-hint)]">

@@ -9,7 +9,7 @@ interface ExecutionResult {
 
 const TIMEOUT_MS = 10_000; // 10 second max execution time
 
-export async function executeSkill(
+export async function executeDVM(
   code: string,
   input: Record<string, unknown>,
 ): Promise<ExecutionResult> {

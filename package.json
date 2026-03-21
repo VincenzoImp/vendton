@@ -2,7 +2,7 @@
   "name": "mesh402",
   "version": "0.1.0",
   "private": true,
-  "description": "Open marketplace where AI agents discover and pay for skills on TON",
+  "description": "Open marketplace where AI agents discover and pay for DVMs (Data Vending Machines) on TON",
   "workspaces": [
     "packages/ton",
     "gateway",

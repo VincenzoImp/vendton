@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Store, Search, Wifi, WifiOff, Loader2, Tag } from "lucide-react";
-import { useSkills } from "../hooks/useSkills";
+import { useDVMs } from "../hooks/useDVMs";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useTonConnect } from "../hooks/useTonConnect";
-import SkillCard from "../components/marketplace/SkillCard";
+import DVMCard from "../components/marketplace/DVMCard";
 import PaymentFlow from "../components/payment/PaymentFlow";
 
 const ALL_TAGS = ["weather", "data", "crypto", "finance", "geolocation", "ai", "nlp", "text", "image", "health"];
 
 export default function Marketplace() {
-  const { skills, loading, error, search } = useSkills();
+  const { dvms, loading, error, search } = useDVMs();
   const { isConnected } = useWebSocket();
   const { connected, connect } = useTonConnect();
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,7 +41,7 @@ export default function Marketplace() {
         </h1>
         <p className="text-sm text-[var(--color-hint)] max-w-xs mx-auto leading-relaxed">
           The open marketplace where AI agents discover, use, and pay for
-          skills on TON. Deploy your API, set a price, get paid instantly.
+          DVMs on TON. Deploy your API, set a price, get paid instantly.
         </p>
       </section>
 
@@ -97,7 +97,7 @@ export default function Marketplace() {
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search skills..."
+              placeholder="Search DVMs..."
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
             />
           </div>
@@ -122,19 +122,19 @@ export default function Marketplace() {
         </div>
       </section>
 
-      {/* Skills list */}
+      {/* DVMs list */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-          Available Skills
-          {skills.length > 0 && (
-            <span className="ml-2 text-[var(--color-text)]">({skills.length})</span>
+          Data Vending Machines
+          {dvms.length > 0 && (
+            <span className="ml-2 text-[var(--color-text)]">({dvms.length})</span>
           )}
         </h2>
 
         {loading && (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-[var(--color-hint)]">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Loading skills...
+            Loading DVMs...
           </div>
         )}
 
@@ -144,21 +144,21 @@ export default function Marketplace() {
           </div>
         )}
 
-        {!loading && !error && skills.length === 0 && (
+        {!loading && !error && dvms.length === 0 && (
           <div className="text-center py-8 text-sm text-[var(--color-hint)]">
-            No skills found. Try a different search or deploy your own!
+            No DVMs found. Try a different search or deploy your own!
           </div>
         )}
 
         <AnimatePresence initial={false}>
-          {skills.map((skill) => (
+          {dvms.map((dvm) => (
             <motion.div
-              key={skill.id}
+              key={dvm.id}
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, height: 0 }}
             >
-              <SkillCard skill={skill} />
+              <DVMCard dvm={dvm} />
             </motion.div>
           ))}
         </AnimatePresence>

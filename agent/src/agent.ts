@@ -34,7 +34,7 @@ const paymentLog: PaymentEvent[] = [];
 function onPayment(event: PaymentEvent) {
   paymentLog.push(event);
   const amountUSDT = (Number(event.amount) / 1_000_000).toFixed(2);
-  console.log(`[PAYMENT] ${amountUSDT} USDT -> ${event.skillName ?? event.skill}`);
+  console.log(`[PAYMENT] ${amountUSDT} USDT -> ${event.dvmName ?? event.dvm}`);
 }
 
 async function handleToolCall(
@@ -42,7 +42,7 @@ async function handleToolCall(
   input: Record<string, unknown>,
 ): Promise<string> {
   switch (name) {
-    case "discover_skills": {
+    case "discover_dvms": {
       const query = input.query as string;
       const tags = input.tags as string[] | undefined;
       const maxPrice = input.max_price as string | undefined;
@@ -53,37 +53,37 @@ async function handleToolCall(
         if (tags && tags.length > 0) params.set("tags", tags.join(","));
         if (maxPrice) params.set("maxPrice", maxPrice);
 
-        const res = await fetch(`${GATEWAY_URL}/api/skills?${params}`);
+        const res = await fetch(`${GATEWAY_URL}/api/dvms?${params}`);
         const data = await res.json();
 
-        if (!data.skills || data.skills.length === 0) {
-          return "No skills found matching your query. Try a broader search.";
+        if (!data.dvms || data.dvms.length === 0) {
+          return "No DVMs found matching your query. Try a broader search.";
         }
 
-        return data.skills
+        return data.dvms
           .map((s: Record<string, unknown>) =>
             `- **${s.name}** (ID: ${s.id})\n  ${s.description}\n  Price: ${s.priceReadable} | Tags: ${(s.tags as string[]).join(", ")}${s.ensName ? ` | ENS: ${s.ensName}` : ""}`,
           )
           .join("\n\n");
       } catch (error) {
-        return `Error discovering skills: ${error instanceof Error ? error.message : String(error)}`;
+        return `Error discovering DVMs: ${error instanceof Error ? error.message : String(error)}`;
       }
     }
 
-    case "call_skill": {
-      const skillId = input.skill_id as string;
+    case "call_dvm": {
+      const dvmId = input.dvm_id as string;
       const params = input.params as Record<string, unknown> | undefined;
 
       try {
-        let url = `${GATEWAY_URL}/proxy/${skillId}`;
+        let url = `${GATEWAY_URL}/proxy/${dvmId}`;
         let method = "GET";
         let body: string | undefined;
 
-        // First get skill details to determine method
-        const infoRes = await fetch(`${GATEWAY_URL}/api/skills/${skillId}`);
+        // First get DVM details to determine method
+        const infoRes = await fetch(`${GATEWAY_URL}/api/dvms/${dvmId}`);
         if (infoRes.ok) {
           const info = await infoRes.json();
-          method = info.skill?.method ?? "GET";
+          method = info.dvm?.method ?? "GET";
         }
 
         if (method === "GET" && params) {
@@ -99,7 +99,7 @@ async function handleToolCall(
         const result = await makePayableRequest(url, method, body, agentWallet, tonClient, onPayment);
         return JSON.stringify(result.data, null, 2);
       } catch (error) {
-        return `Error calling skill: ${error instanceof Error ? error.message : String(error)}`;
+        return `Error calling DVM: ${error instanceof Error ? error.message : String(error)}`;
       }
     }
 
@@ -135,15 +135,15 @@ const MAX_ITERATIONS = 15;
 
 const SYSTEM_PROMPT =
   "You are an AI assistant on the mesh402 marketplace — an open platform where users and AI agents " +
-  "discover, use, and pay for skills on the TON blockchain using USDT.\n\n" +
+  "discover, use, and pay for DVMs (Data Vending Machines) on the TON blockchain using USDT.\n\n" +
   "Your workflow:\n" +
-  "1. ALWAYS start by discovering available skills using discover_skills\n" +
-  "2. Select the best skill(s) for the task\n" +
-  "3. Call skills using call_skill — payment happens automatically via x402\n" +
-  "4. Chain multiple skills when needed (e.g. get data, then translate it)\n" +
+  "1. ALWAYS start by discovering available DVMs using discover_dvms\n" +
+  "2. Select the best DVM(s) for the task\n" +
+  "3. Call DVMs using call_dvm — payment happens automatically via x402\n" +
+  "4. Chain multiple DVMs when needed (e.g. get data, then translate it)\n" +
   "5. Report results clearly, including costs\n\n" +
-  "You have access to a TON wallet with USDT. Be cost-conscious but don't hesitate to pay for quality skills. " +
-  "When chaining skills, pass the output of one as input to the next.\n\n" +
+  "You have access to a TON wallet with USDT. Be cost-conscious but don't hesitate to pay for quality DVMs. " +
+  "When chaining DVMs, pass the output of one as input to the next.\n\n" +
   `Gateway: ${GATEWAY_URL}`;
 
 export async function runAgent(userMessage: string, userApiKey?: string): Promise<string> {
@@ -224,7 +224,7 @@ async function handleToolCallWithEvents(
     const lastPayment = paymentLog[paymentLog.length - 1];
     sendEvent("payment", {
       amount: (Number(lastPayment.amount) / 1_000_000).toFixed(2) + " USDT",
-      skill: lastPayment.skillName ?? lastPayment.skill,
+      dvm: lastPayment.dvmName ?? lastPayment.dvm,
     });
   }
 
@@ -329,7 +329,7 @@ if (PORT) {
         response: result,
         payments: paymentLog.map((p) => ({
           amount: (Number(p.amount) / 1_000_000).toFixed(2) + " USDT",
-          skill: p.skillName ?? p.skill,
+          dvm: p.dvmName ?? p.dvm,
           timestamp: p.timestamp,
         })),
       });
@@ -366,7 +366,7 @@ if (PORT) {
         response: result,
         payments: paymentLog.map((p) => ({
           amount: (Number(p.amount) / 1_000_000).toFixed(2) + " USDT",
-          skill: p.skillName ?? p.skill,
+          dvm: p.dvmName ?? p.dvm,
           timestamp: p.timestamp,
         })),
       });
@@ -398,7 +398,7 @@ if (PORT) {
         console.log("\n--- Payment Log ---");
         paymentLog.forEach((p) => {
           const amount = (Number(p.amount) / 1_000_000).toFixed(2);
-          console.log(`  ${amount} USDT -> ${p.skillName ?? p.skill}`);
+          console.log(`  ${amount} USDT -> ${p.dvmName ?? p.dvm}`);
         });
       })
       .catch(console.error);

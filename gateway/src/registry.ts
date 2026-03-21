@@ -1,4 +1,4 @@
-import type { SkillRegistration, SkillQuery } from "./types.js";
+import type { DVMRegistration, DVMQuery } from "./types.js";
 import db from "./db.js";
 
 function generateId(): string {
@@ -12,7 +12,7 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function rowToSkill(row: Record<string, unknown>): SkillRegistration {
+function rowToDVM(row: Record<string, unknown>): DVMRegistration {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -35,20 +35,20 @@ function rowToSkill(row: Record<string, unknown>): SkillRegistration {
   };
 }
 
-class SkillRegistry {
+class DVMRegistry {
   // Prepared statements
   private insertStmt = db.prepare(`
-    INSERT INTO skills (id, name, slug, endpoint, code, method, description, tags, price_usdt, price_readable, owner_address, ens_name, created_at, call_count, total_revenue, status, input_schema, output_example)
+    INSERT INTO dvms (id, name, slug, endpoint, code, method, description, tags, price_usdt, price_readable, owner_address, ens_name, created_at, call_count, total_revenue, status, input_schema, output_example)
     VALUES (@id, @name, @slug, @endpoint, @code, @method, @description, @tags, @price_usdt, @price_readable, @owner_address, @ens_name, @created_at, @call_count, @total_revenue, @status, @input_schema, @output_example)
   `);
 
-  private getByIdStmt = db.prepare(`SELECT * FROM skills WHERE id = ?`);
-  private getBySlugStmt = db.prepare(`SELECT * FROM skills WHERE slug = ?`);
-  private getActiveStmt = db.prepare(`SELECT * FROM skills WHERE status = 'active'`);
-  private getByOwnerStmt = db.prepare(`SELECT * FROM skills WHERE owner_address = ? AND status = 'active'`);
-  private incrementCallsStmt = db.prepare(`UPDATE skills SET call_count = call_count + 1, total_revenue = CAST((CAST(total_revenue AS INTEGER) + CAST(? AS INTEGER)) AS TEXT) WHERE id = ?`);
-  private removeStmt = db.prepare(`UPDATE skills SET status = 'inactive' WHERE id = ?`);
-  private countStmt = db.prepare(`SELECT COUNT(*) as count FROM skills`);
+  private getByIdStmt = db.prepare(`SELECT * FROM dvms WHERE id = ?`);
+  private getBySlugStmt = db.prepare(`SELECT * FROM dvms WHERE slug = ?`);
+  private getActiveStmt = db.prepare(`SELECT * FROM dvms WHERE status = 'active'`);
+  private getByOwnerStmt = db.prepare(`SELECT * FROM dvms WHERE owner_address = ? AND status = 'active'`);
+  private incrementCallsStmt = db.prepare(`UPDATE dvms SET call_count = call_count + 1, total_revenue = CAST((CAST(total_revenue AS INTEGER) + CAST(? AS INTEGER)) AS TEXT) WHERE id = ?`);
+  private removeStmt = db.prepare(`UPDATE dvms SET status = 'inactive' WHERE id = ?`);
+  private countStmt = db.prepare(`SELECT COUNT(*) as count FROM dvms`);
 
   register(input: {
     name: string;
@@ -62,17 +62,17 @@ class SkillRegistry {
     ensName?: string;
     inputSchema?: Record<string, unknown>;
     outputExample?: Record<string, unknown>;
-  }): SkillRegistration {
+  }): DVMRegistration {
     const id = generateId();
     const slug = slugify(input.name);
     const decimals = 6;
     const readable = (Number(input.priceUSDT) / Math.pow(10, decimals)).toFixed(2) + " USDT";
 
-    // Auto-generate ENS name: <skill>.<owner>.<platform>.eth
+    // Auto-generate ENS name: <dvm>.<owner>.<platform>.eth
     const ownerShort = input.ownerAddress.replace(/^0:/, "").slice(0, 8).toLowerCase();
     const ensName = input.ensName || `${slug}.${ownerShort}.mesh402.eth`;
 
-    const skill: SkillRegistration = {
+    const dvm: DVMRegistration = {
       id,
       slug,
       name: input.name,
@@ -94,40 +94,40 @@ class SkillRegistry {
     };
 
     this.insertStmt.run({
-      id: skill.id,
-      name: skill.name,
-      slug: skill.slug,
-      endpoint: skill.endpoint ?? null,
-      code: skill.code ?? null,
-      method: skill.method,
-      description: skill.description,
-      tags: JSON.stringify(skill.tags),
-      price_usdt: skill.priceUSDT,
-      price_readable: skill.priceReadable,
-      owner_address: skill.ownerAddress,
-      ens_name: skill.ensName ?? null,
-      created_at: skill.createdAt,
-      call_count: skill.callCount,
-      total_revenue: skill.totalRevenue,
-      status: skill.status,
-      input_schema: skill.inputSchema ? JSON.stringify(skill.inputSchema) : null,
-      output_example: skill.outputExample ? JSON.stringify(skill.outputExample) : null,
+      id: dvm.id,
+      name: dvm.name,
+      slug: dvm.slug,
+      endpoint: dvm.endpoint ?? null,
+      code: dvm.code ?? null,
+      method: dvm.method,
+      description: dvm.description,
+      tags: JSON.stringify(dvm.tags),
+      price_usdt: dvm.priceUSDT,
+      price_readable: dvm.priceReadable,
+      owner_address: dvm.ownerAddress,
+      ens_name: dvm.ensName ?? null,
+      created_at: dvm.createdAt,
+      call_count: dvm.callCount,
+      total_revenue: dvm.totalRevenue,
+      status: dvm.status,
+      input_schema: dvm.inputSchema ? JSON.stringify(dvm.inputSchema) : null,
+      output_example: dvm.outputExample ? JSON.stringify(dvm.outputExample) : null,
     });
 
-    return skill;
+    return dvm;
   }
 
-  get(id: string): SkillRegistration | undefined {
+  get(id: string): DVMRegistration | undefined {
     const row = this.getByIdStmt.get(id) as Record<string, unknown> | undefined;
-    return row ? rowToSkill(row) : undefined;
+    return row ? rowToDVM(row) : undefined;
   }
 
-  getBySlug(slug: string): SkillRegistration | undefined {
+  getBySlug(slug: string): DVMRegistration | undefined {
     const row = this.getBySlugStmt.get(slug) as Record<string, unknown> | undefined;
-    return row ? rowToSkill(row) : undefined;
+    return row ? rowToDVM(row) : undefined;
   }
 
-  search(query: SkillQuery): { skills: SkillRegistration[]; total: number } {
+  search(query: DVMQuery): { dvms: DVMRegistration[]; total: number } {
     // Build dynamic query
     const conditions: string[] = ["status = 'active'"];
     const params: unknown[] = [];
@@ -174,20 +174,20 @@ class SkillRegistry {
     const offset = query.offset ?? 0;
     const limit = query.limit ?? 50;
 
-    const countRow = db.prepare(`SELECT COUNT(*) as count FROM skills WHERE ${where}`).get(...params) as { count: number };
-    const rows = db.prepare(`SELECT * FROM skills WHERE ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...params, limit, offset) as Record<string, unknown>[];
+    const countRow = db.prepare(`SELECT COUNT(*) as count FROM dvms WHERE ${where}`).get(...params) as { count: number };
+    const rows = db.prepare(`SELECT * FROM dvms WHERE ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...params, limit, offset) as Record<string, unknown>[];
 
-    let skills = rows.map(rowToSkill);
+    let dvms = rows.map(rowToDVM);
 
     // Filter by tags in JS since they're stored as JSON
     if (query.tags && query.tags.length > 0) {
       const tagSet = new Set(query.tags.map((t) => t.toLowerCase()));
-      skills = skills.filter((s) =>
+      dvms = dvms.filter((s) =>
         s.tags.some((t) => tagSet.has(t.toLowerCase())),
       );
     }
 
-    return { skills, total: countRow.count };
+    return { dvms, total: countRow.count };
   }
 
   remove(id: string): boolean {
@@ -199,21 +199,21 @@ class SkillRegistry {
     this.incrementCallsStmt.run(amount, id);
   }
 
-  getByOwner(address: string): SkillRegistration[] {
+  getByOwner(address: string): DVMRegistration[] {
     const rows = this.getByOwnerStmt.all(address) as Record<string, unknown>[];
-    return rows.map(rowToSkill);
+    return rows.map(rowToDVM);
   }
 
-  getAll(): SkillRegistration[] {
+  getAll(): DVMRegistration[] {
     const rows = this.getActiveStmt.all() as Record<string, unknown>[];
-    return rows.map(rowToSkill);
+    return rows.map(rowToDVM);
   }
 
   seed(): void {
     // Only seed if the table is empty
     const { count } = this.countStmt.get() as { count: number };
     if (count > 0) {
-      console.log(`Registry already has ${count} skills, skipping seed`);
+      console.log(`Registry already has ${count} DVMs, skipping seed`);
       return;
     }
 
@@ -277,8 +277,8 @@ return {
     });
 
     const { count: newCount } = this.countStmt.get() as { count: number };
-    console.log(`Registry seeded with ${newCount} skills`);
+    console.log(`Registry seeded with ${newCount} DVMs`);
   }
 }
 
-export const registry = new SkillRegistry();
+export const registry = new DVMRegistry();

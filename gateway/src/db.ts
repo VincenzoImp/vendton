@@ -8,9 +8,9 @@ const db: DatabaseType = new Database(DB_PATH);
 // Enable WAL mode for better concurrent read performance
 db.pragma("journal_mode = WAL");
 
-// Create skills table
+// Create dvms table
 db.exec(`
-  CREATE TABLE IF NOT EXISTS skills (
+  CREATE TABLE IF NOT EXISTS dvms (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
@@ -31,9 +31,9 @@ db.exec(`
     output_example TEXT
   );
 
-  CREATE INDEX IF NOT EXISTS idx_skills_slug ON skills(slug);
-  CREATE INDEX IF NOT EXISTS idx_skills_status ON skills(status);
-  CREATE INDEX IF NOT EXISTS idx_skills_owner ON skills(owner_address);
+  CREATE INDEX IF NOT EXISTS idx_dvms_slug ON dvms(slug);
+  CREATE INDEX IF NOT EXISTS idx_dvms_status ON dvms(status);
+  CREATE INDEX IF NOT EXISTS idx_dvms_owner ON dvms(owner_address);
 `);
 
 export default db;

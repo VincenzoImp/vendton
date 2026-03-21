@@ -6,7 +6,7 @@ const GATEWAY_URL =
     ? "http://localhost:4000"
     : "https://mesh402-gateway.up.railway.app");
 
-export interface Skill {
+export interface DVM {
   id: string;
   name: string;
   slug: string;
@@ -26,16 +26,16 @@ export interface Skill {
   outputExample?: Record<string, unknown>;
 }
 
-interface UseSkillsReturn {
-  skills: Skill[];
+interface UseDVMsReturn {
+  dvms: DVM[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
   search: (q: string, tags?: string[]) => void;
-  register: (data: RegisterSkillInput) => Promise<Skill>;
+  register: (data: RegisterDVMInput) => Promise<DVM>;
 }
 
-interface RegisterSkillInput {
+interface RegisterDVMInput {
   name: string;
   code?: string;
   endpoint?: string;
@@ -47,12 +47,12 @@ interface RegisterSkillInput {
   ensName?: string;
 }
 
-export function useSkills(): UseSkillsReturn {
-  const [skills, setSkills] = useState<Skill[]>([]);
+export function useDVMs(): UseDVMsReturn {
+  const [dvms, setDVMs] = useState<DVM[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSkills = useCallback(async (q?: string, tags?: string[]) => {
+  const fetchDVMs = useCallback(async (q?: string, tags?: string[]) => {
     setLoading(true);
     setError(null);
     try {
@@ -60,34 +60,34 @@ export function useSkills(): UseSkillsReturn {
       if (q) params.set("q", q);
       if (tags && tags.length > 0) params.set("tags", tags.join(","));
 
-      const res = await fetch(`${GATEWAY_URL}/api/skills?${params}`);
+      const res = await fetch(`${GATEWAY_URL}/api/dvms?${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setSkills(data.skills || []);
+      setDVMs(data.dvms || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch skills");
+      setError(err instanceof Error ? err.message : "Failed to fetch DVMs");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchSkills();
-  }, [fetchSkills]);
+    fetchDVMs();
+  }, [fetchDVMs]);
 
   const refresh = useCallback(() => {
-    fetchSkills();
-  }, [fetchSkills]);
+    fetchDVMs();
+  }, [fetchDVMs]);
 
   const search = useCallback(
     (q: string, tags?: string[]) => {
-      fetchSkills(q, tags);
+      fetchDVMs(q, tags);
     },
-    [fetchSkills],
+    [fetchDVMs],
   );
 
-  const register = useCallback(async (data: RegisterSkillInput): Promise<Skill> => {
-    const res = await fetch(`${GATEWAY_URL}/api/skills/register`, {
+  const register = useCallback(async (data: RegisterDVMInput): Promise<DVM> => {
+    const res = await fetch(`${GATEWAY_URL}/api/dvms/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -97,11 +97,11 @@ export function useSkills(): UseSkillsReturn {
       throw new Error(err.error || `HTTP ${res.status}`);
     }
     const result = await res.json();
-    await fetchSkills(); // refresh list
-    return result.skill;
-  }, [fetchSkills]);
+    await fetchDVMs(); // refresh list
+    return result.dvm;
+  }, [fetchDVMs]);
 
-  return { skills, loading, error, refresh, search, register };
+  return { dvms, loading, error, refresh, search, register };
 }
 
 export { GATEWAY_URL };

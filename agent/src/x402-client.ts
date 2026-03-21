@@ -31,8 +31,8 @@ interface X402Response {
 
 export interface PaymentEvent {
   type: "payment";
-  skill: string;
-  skillName?: string;
+  dvm: string;
+  dvmName?: string;
   amount: string;
   recipient: string;
   timestamp: number;
@@ -69,7 +69,7 @@ export async function makePayableRequest(
   } else {
     const errorBody = await initialRes.json();
     requirements = errorBody.accepts?.[0] ?? errorBody.requirements?.accepts?.[0];
-    serviceName = errorBody.skill?.name;
+    serviceName = errorBody.dvm?.name;
   }
 
   if (!requirements) {
@@ -145,8 +145,8 @@ export async function makePayableRequest(
   if (paidRes.ok) {
     onPayment?.({
       type: "payment",
-      skill: url,
-      skillName: serviceName ?? (requirements.extra?.skillName as string),
+      dvm: url,
+      dvmName: serviceName ?? (requirements.extra?.dvmName as string),
       amount: requirements.amount,
       recipient: requirements.payTo,
       timestamp: Date.now(),

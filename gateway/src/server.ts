@@ -15,7 +15,7 @@ import {
 } from "@x402/ton";
 import { config } from "./config.js";
 import { registry } from "./registry.js";
-import { executeSkill } from "./executor.js";
+import { executeDVM } from "./executor.js";
 import { resolveENSToTON, getENSAvatar, getENSDescription } from "./ens.js";
 // TON client
 const tonClient = new TonClient({
@@ -54,7 +54,7 @@ const VerifySettleBodySchema = z.object({
   }),
 });
 
-const RegisterSkillSchema = z.object({
+const RegisterDVMSchema = z.object({
   name: z.string().min(1).max(100),
   endpoint: z.string().optional(),
   code: z.string().optional(),
@@ -122,20 +122,20 @@ app.use((req, _res, next) => {
 
 // === Registry Routes ===
 
-app.post("/api/skills/register", (req: Request, res: Response) => {
-  const parsed = RegisterSkillSchema.safeParse(req.body);
+app.post("/api/dvms/register", (req: Request, res: Response) => {
+  const parsed = RegisterDVMSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
     return;
   }
 
-  const skill = registry.register(parsed.data);
-  broadcastEvent({ type: "skill_registered", skillId: skill.id, skillName: skill.name, timestamp: Date.now() });
-  console.log(`[registry] New skill: ${skill.name} (${skill.id}) at ${skill.priceReadable}`);
-  res.status(201).json({ success: true, skill });
+  const dvm = registry.register(parsed.data);
+  broadcastEvent({ type: "dvm_registered", dvmId: dvm.id, dvmName: dvm.name, timestamp: Date.now() });
+  console.log(`[registry] New DVM: ${dvm.name} (${dvm.id}) at ${dvm.priceReadable}`);
+  res.status(201).json({ success: true, dvm });
 });
 
-app.get("/api/skills", (req: Request, res: Response) => {
+app.get("/api/dvms", (req: Request, res: Response) => {
   const query = {
     q: req.query.q as string | undefined,
     tags: req.query.tags ? (req.query.tags as string).split(",") : undefined,
@@ -150,23 +150,23 @@ app.get("/api/skills", (req: Request, res: Response) => {
   res.json(result);
 });
 
-app.get("/api/skills/:id", (req: Request, res: Response) => {
+app.get("/api/dvms/:id", (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const skill = registry.get(id) ?? registry.getBySlug(id);
-  if (!skill) {
-    res.status(404).json({ error: "Skill not found" });
+  const dvm = registry.get(id) ?? registry.getBySlug(id);
+  if (!dvm) {
+    res.status(404).json({ error: "DVM not found" });
     return;
   }
-  res.json({ skill });
+  res.json({ dvm });
 });
 
 // === Proxy Route — the x402 gateway ===
 
-app.all("/proxy/:skillId", async (req: Request, res: Response) => {
-  const skillId = req.params.skillId as string;
-  const skill = registry.get(skillId) ?? registry.getBySlug(skillId);
-  if (!skill) {
-    res.status(404).json({ error: "Skill not found" });
+app.all("/proxy/:dvmId", async (req: Request, res: Response) => {
+  const dvmId = req.params.dvmId as string;
+  const dvm = registry.get(dvmId) ?? registry.getBySlug(dvmId);
+  if (!dvm) {
+    res.status(404).json({ error: "DVM not found" });
     return;
   }
 
@@ -179,19 +179,19 @@ app.all("/proxy/:skillId", async (req: Request, res: Response) => {
       accepts: [{
         scheme: "exact",
         network: TON_NETWORK,
-        amount: skill.priceUSDT,
+        amount: dvm.priceUSDT,
         asset: config.usdtAssetAddress,
-        payTo: skill.ownerAddress,
+        payTo: dvm.ownerAddress,
         maxTimeoutSeconds: 60,
-        extra: { name: "USDT", decimals: 6, skillId: skill.id, skillName: skill.name },
+        extra: { name: "USDT", decimals: 6, dvmId: dvm.id, dvmName: dvm.name },
       }],
     };
 
     const encoded = Buffer.from(JSON.stringify(requirements), "utf-8").toString("base64");
     res.status(402).set("X-PAYMENT-REQUIRED", encoded).json({
       error: "Payment Required",
-      message: `This skill costs ${skill.priceReadable}`,
-      skill: { id: skill.id, name: skill.name, price: skill.priceReadable },
+      message: `This DVM costs ${dvm.priceReadable}`,
+      dvm: { id: dvm.id, name: dvm.name, price: dvm.priceReadable },
       requirements,
     });
     return;
@@ -203,9 +203,9 @@ app.all("/proxy/:skillId", async (req: Request, res: Response) => {
     const requirements: PaymentRequirements = {
       scheme: "exact",
       network: TON_NETWORK,
-      amount: skill.priceUSDT,
+      amount: dvm.priceUSDT,
       asset: config.usdtAssetAddress,
-      payTo: skill.ownerAddress,
+      payTo: dvm.ownerAddress,
       maxTimeoutSeconds: 60,
       extra: { name: "USDT", decimals: 6 },
     };
@@ -222,28 +222,28 @@ app.all("/proxy/:skillId", async (req: Request, res: Response) => {
     }
 
     // Payment succeeded — increment stats
-    registry.incrementCalls(skill.id, skill.priceUSDT);
-    broadcastEvent({ type: "skill_called", skillId: skill.id, skillName: skill.name, payer: result.payer, amount: skill.priceUSDT, transaction: result.transaction, timestamp: Date.now() });
+    registry.incrementCalls(dvm.id, dvm.priceUSDT);
+    broadcastEvent({ type: "dvm_called", dvmId: dvm.id, dvmName: dvm.name, payer: result.payer, amount: dvm.priceUSDT, transaction: result.transaction, timestamp: Date.now() });
 
-    // Execute code-based skill
-    if (skill.code) {
+    // Execute code-based DVM
+    if (dvm.code) {
       const input = { ...req.query, ...(req.body || {}) };
-      const execResult = await executeSkill(skill.code, input as Record<string, unknown>);
+      const execResult = await executeDVM(dvm.code, input as Record<string, unknown>);
       if (!execResult.success) {
-        res.status(500).json({ error: "Skill execution failed", message: execResult.error, durationMs: execResult.durationMs });
+        res.status(500).json({ error: "DVM execution failed", message: execResult.error, durationMs: execResult.durationMs });
         return;
       }
-      res.json({ data: execResult.data, skill: { id: skill.id, name: skill.name }, durationMs: execResult.durationMs, paidAmount: skill.priceReadable, payment: { amount: skill.priceReadable, transaction: result.transaction } });
+      res.json({ data: execResult.data, dvm: { id: dvm.id, name: dvm.name }, durationMs: execResult.durationMs, paidAmount: dvm.priceReadable, payment: { amount: dvm.priceReadable, transaction: result.transaction } });
       return;
     }
 
     // Forward to external endpoint
-    if (skill.endpoint) {
+    if (dvm.endpoint) {
       try {
-        const fetchOptions: RequestInit = { method: skill.method, headers: { "Content-Type": "application/json" } };
-        if (skill.method === "POST" && req.body) fetchOptions.body = JSON.stringify(req.body);
+        const fetchOptions: RequestInit = { method: dvm.method, headers: { "Content-Type": "application/json" } };
+        if (dvm.method === "POST" && req.body) fetchOptions.body = JSON.stringify(req.body);
 
-        const url = new URL(skill.endpoint);
+        const url = new URL(dvm.endpoint);
         if (req.query) {
           for (const [key, value] of Object.entries(req.query)) {
             if (typeof value === "string") url.searchParams.set(key, value);
@@ -252,14 +252,14 @@ app.all("/proxy/:skillId", async (req: Request, res: Response) => {
 
         const externalRes = await fetch(url.toString(), fetchOptions);
         const data = await externalRes.json().catch(() => externalRes.text());
-        res.json({ data, payment: { amount: skill.priceReadable, transaction: result.transaction } });
+        res.json({ data, payment: { amount: dvm.priceReadable, transaction: result.transaction } });
       } catch (error) {
-        res.json({ error: "Skill call failed", message: error instanceof Error ? error.message : String(error), payment: { amount: skill.priceReadable, transaction: result.transaction } });
+        res.json({ error: "DVM call failed", message: error instanceof Error ? error.message : String(error), payment: { amount: dvm.priceReadable, transaction: result.transaction } });
       }
       return;
     }
 
-    res.status(500).json({ error: "Skill has no code or endpoint configured" });
+    res.status(500).json({ error: "DVM has no code or endpoint configured" });
   } catch (err) {
     res.status(502).json({ error: "Payment processing error", message: err instanceof Error ? err.message : String(err) });
   }
@@ -296,14 +296,14 @@ app.get("/supported", (_req: Request, res: Response) => {
 app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
   const ensName = req.params.name as string;
   try {
-    // Try local resolution first (skills registered on this gateway)
-    const localSkills = registry.search({ ensName });
-    if (localSkills.skills.length > 0) {
-      const skill = localSkills.skills[0];
+    // Try local resolution first (DVMs registered on this gateway)
+    const localDVMs = registry.search({ ensName });
+    if (localDVMs.dvms.length > 0) {
+      const dvm = localDVMs.dvms[0];
       return res.json({
         ensName,
-        tonAddress: skill.ownerAddress,
-        skill: { id: skill.id, name: skill.name, price: skill.priceReadable, description: skill.description },
+        tonAddress: dvm.ownerAddress,
+        dvm: { id: dvm.id, name: dvm.name, price: dvm.priceReadable, description: dvm.description },
         source: "mesh402-registry",
       });
     }
@@ -320,7 +320,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
       tonAddress,
       avatar,
       description,
-      skills: [],
+      dvms: [],
       source: "ens-sepolia",
     });
   } catch (error) {
@@ -329,7 +329,7 @@ app.get("/api/ens/resolve/:name", async (req: Request, res: Response) => {
       tonAddress: null,
       avatar: null,
       description: null,
-      skills: [],
+      dvms: [],
       error: error instanceof Error ? error.message : "Resolution failed",
     });
   }
@@ -341,7 +341,7 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     name: "mesh402-gateway",
-    skills: registry.getAll().length,
+    dvms: registry.getAll().length,
     uptime: Math.floor((Date.now() - startTime) / 1000),
     wsClients: wsClients.size,
   });
@@ -360,10 +360,10 @@ server.listen(config.port, () => {
   console.log(`TON RPC: ${config.tonRpcUrl}`);
   console.log(`WebSocket: ws://localhost:${config.port}/ws`);
   console.log(`\nEndpoints:`);
-  console.log(`  POST /api/skills/register       Register a new skill`);
-  console.log(`  GET  /api/skills                Search & browse skills`);
-  console.log(`  GET  /api/skills/:id             Get skill details`);
-  console.log(`  ALL  /proxy/:skillId             Call skill (x402 gated)`);
+  console.log(`  POST /api/dvms/register          Register a new DVM`);
+  console.log(`  GET  /api/dvms                   Search & browse DVMs`);
+  console.log(`  GET  /api/dvms/:id               Get DVM details`);
+  console.log(`  ALL  /proxy/:dvmId               Call DVM (x402 gated)`);
   console.log(`  POST /verify                    Verify payment`);
   console.log(`  POST /settle                    Settle payment`);
   console.log(`  GET  /supported                 Supported schemes`);

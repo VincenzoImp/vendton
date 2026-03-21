@@ -2,11 +2,11 @@ import type Anthropic from "@anthropic-ai/sdk";
 
 export const meshAgentTools: Anthropic.Tool[] = [
   {
-    name: "discover_skills",
+    name: "discover_dvms",
     description:
-      "Search the mesh402 marketplace for skills by capability, tags, or description. " +
-      "Returns matching skills with their prices, IDs, and descriptions. " +
-      "Always call this first to find available skills before calling them.",
+      "Search the mesh402 marketplace for DVMs (Data Vending Machines) by capability, tags, or description. " +
+      "Returns matching DVMs with their prices, IDs, and descriptions. " +
+      "Always call this first to find available DVMs before calling them.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -28,24 +28,24 @@ export const meshAgentTools: Anthropic.Tool[] = [
     },
   },
   {
-    name: "call_skill",
+    name: "call_dvm",
     description:
-      "Call a mesh402 skill by its ID. The payment is handled automatically via the x402 protocol. " +
-      "Pass query parameters as part of the body for GET skills, or as JSON body for POST skills. " +
-      "Returns the skill response data.",
+      "Call a mesh402 DVM (Data Vending Machine) by its ID. The payment is handled automatically via the x402 protocol. " +
+      "Pass query parameters as part of the body for GET DVMs, or as JSON body for POST DVMs. " +
+      "Returns the DVM response data.",
     input_schema: {
       type: "object" as const,
       properties: {
-        skill_id: {
+        dvm_id: {
           type: "string",
-          description: "The skill ID from discover_skills results",
+          description: "The DVM ID from discover_dvms results",
         },
         params: {
           type: "object",
-          description: "Parameters to pass to the skill (query params for GET, body for POST)",
+          description: "Parameters to pass to the DVM (query params for GET, body for POST)",
         },
       },
-      required: ["skill_id"],
+      required: ["dvm_id"],
     },
   },
   {
@@ -59,8 +59,8 @@ export const meshAgentTools: Anthropic.Tool[] = [
   {
     name: "resolve_ens",
     description:
-      "Resolve an ENS name to find the associated TON address and any skills registered under it. " +
-      "Use this when you see .eth names to discover the owner and their skills.",
+      "Resolve an ENS name to find the associated TON address and any DVMs registered under it. " +
+      "Use this when you see .eth names to discover the owner and their DVMs.",
     input_schema: {
       type: "object" as const,
       properties: {
