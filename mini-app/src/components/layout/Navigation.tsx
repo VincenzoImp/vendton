@@ -1,10 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { Home, Bot, CreditCard, BarChart3 } from "lucide-react";
+import { Store, PlusCircle, Bot, BarChart3 } from "lucide-react";
 
 const tabs = [
-  { to: "/", icon: Home, label: "Home" },
-  { to: "/agent-demo", icon: Bot, label: "Agent" },
-  { to: "/manual-pay", icon: CreditCard, label: "Pay" },
+  { to: "/", icon: Store, label: "Marketplace" },
+  { to: "/deploy", icon: PlusCircle, label: "Deploy" },
+  { to: "/playground", icon: Bot, label: "Agent" },
   { to: "/dashboard", icon: BarChart3, label: "Dashboard" },
 ];
 

@@ -15,35 +15,35 @@ const steps = [
     label: "Request",
     icon: Globe,
     color: "#3390EC",
-    description: "Client requests a paid API endpoint",
+    description: "Agent discovers and calls a paid service",
   },
   {
     id: "402",
     label: "402",
     icon: ShieldAlert,
     color: "#F5A623",
-    description: "Server responds with HTTP 402 Payment Required",
+    description: "Gateway responds with HTTP 402 Payment Required",
   },
   {
     id: "sign",
     label: "Sign",
     icon: PenTool,
     color: "#8B5CF6",
-    description: "Client signs a TON transaction",
+    description: "Agent signs a USDT payment on TON",
   },
   {
     id: "pay",
     label: "Pay",
     icon: Send,
     color: "#10B981",
-    description: "Payment is sent on-chain via TON",
+    description: "Payment is settled on-chain",
   },
   {
     id: "200",
     label: "200 OK",
     icon: CheckCircle2,
     color: "#3390EC",
-    description: "Server verifies payment and returns data",
+    description: "Gateway verifies payment and returns service data",
   },
 ];
 
@@ -81,9 +81,7 @@ export default function PaymentFlow({
   }, []);
 
   useEffect(() => {
-    if (autoPlay) {
-      startFlow();
-    }
+    if (autoPlay) startFlow();
   }, [autoPlay, startFlow]);
 
   function resetFlow() {
@@ -93,7 +91,6 @@ export default function PaymentFlow({
 
   return (
     <div className="w-full">
-      {/* Step indicators */}
       <div className="flex items-center justify-between mb-6 px-2">
         {steps.map((step, i) => {
           const Icon = step.icon;
@@ -158,7 +155,6 @@ export default function PaymentFlow({
         })}
       </div>
 
-      {/* Description panel */}
       <div className="min-h-[72px] rounded-xl bg-[var(--color-secondary-bg)] p-4 mb-4">
         <AnimatePresence mode="wait">
           {activeStep >= 0 && activeStep < steps.length ? (
@@ -184,13 +180,12 @@ export default function PaymentFlow({
               animate={{ opacity: 1 }}
               className="text-sm text-center text-[var(--color-hint)]"
             >
-              See how x402-TON handles paid API requests
+              See how mesh402 handles paid service requests
             </motion.p>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Controls */}
       <div className="flex justify-center gap-3">
         <button
           onClick={startFlow}

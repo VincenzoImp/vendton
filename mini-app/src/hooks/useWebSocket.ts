@@ -2,12 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 export interface SettlementEvent {
   type: string;
+  serviceId?: string;
+  serviceName?: string;
   payer: string;
   amount: string;
-  asset: string;
-  payTo: string;
+  asset?: string;
+  payTo?: string;
   transaction: string;
-  network: string;
+  network?: string;
   timestamp: number;
 }
 
@@ -20,8 +22,8 @@ interface UseWebSocketReturn {
 const WS_URL =
   import.meta.env.VITE_WS_URL ||
   (typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? "ws://localhost:3001/ws"
-    : "wss://x402-ton-facilitator.up.railway.app/ws");
+    ? "ws://localhost:4000/ws"
+    : "wss://mesh402-gateway.up.railway.app/ws");
 const MAX_EVENTS = 100;
 const MAX_RECONNECT_DELAY = 30_000;
 const BASE_RECONNECT_DELAY = 1_000;
@@ -53,9 +55,11 @@ export function useWebSocket(): UseWebSocketReturn {
         if (!mountedRef.current) return;
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "settlement") {
+          if (data.type === "settlement" || data.type === "service_called") {
             const settlement: SettlementEvent = {
               type: data.type,
+              serviceId: data.serviceId || "",
+              serviceName: data.serviceName || "",
               payer: data.payer || "",
               amount: data.amount || "",
               asset: data.asset || "",
@@ -68,7 +72,7 @@ export function useWebSocket(): UseWebSocketReturn {
             setEvents((prev) => [settlement, ...prev].slice(0, MAX_EVENTS));
           }
         } catch {
-          // Ignore non-JSON messages
+          // Ignore non-JSON
         }
       };
 
@@ -80,7 +84,6 @@ export function useWebSocket(): UseWebSocketReturn {
       };
 
       ws.onerror = () => {
-        // onclose will fire after onerror, so reconnect is handled there
         ws.close();
       };
     } catch {
@@ -100,9 +103,7 @@ export function useWebSocket(): UseWebSocketReturn {
 
     reconnectTimerRef.current = setTimeout(() => {
       reconnectTimerRef.current = null;
-      if (mountedRef.current) {
-        connect();
-      }
+      if (mountedRef.current) connect();
     }, delay);
   }, [connect]);
 

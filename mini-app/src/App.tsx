@@ -5,9 +5,9 @@ import { miniApp, viewport, init as initTMA } from "@telegram-apps/sdk-react";
 
 import Header from "./components/layout/Header";
 import Navigation from "./components/layout/Navigation";
-import Home from "./pages/Home";
-import AgentDemo from "./pages/AgentDemo";
-import ManualPay from "./pages/ManualPay";
+import Marketplace from "./pages/Marketplace";
+import Deploy from "./pages/Deploy";
+import Playground from "./pages/Playground";
 import Dashboard from "./pages/Dashboard";
 
 const manifestUrl =
@@ -20,11 +20,11 @@ function AppLayout() {
       <Header />
       <main className="flex-1 pb-16 overflow-y-auto">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/agent-demo" element={<AgentDemo />} />
-          <Route path="/manual-pay" element={<ManualPay />} />
+          <Route path="/" element={<Marketplace />} />
+          <Route path="/deploy" element={<Deploy />} />
+          <Route path="/playground" element={<Playground />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="*" element={<Home />} />
+          <Route path="*" element={<Marketplace />} />
         </Routes>
       </main>
       <Navigation />
@@ -39,7 +39,7 @@ export default function App() {
       miniApp.ready();
       viewport.expand();
     } catch {
-      // Running outside Telegram — ignore SDK init errors
+      // Running outside Telegram
     }
   }, []);
 

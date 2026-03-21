@@ -1,21 +1,23 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BarChart3, TrendingUp, Wallet, Activity, Wifi, WifiOff } from "lucide-react";
-import TransactionCard, {
-  type Transaction,
-} from "../components/payment/TransactionCard";
+import { BarChart3, TrendingUp, Wallet, Activity, Wifi, WifiOff, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useRegistry } from "../hooks/useRegistry";
+
+type Tab = "spending" | "revenue";
 
 export default function Dashboard() {
-  const { connected, shortAddress } = useTonConnect();
+  const { connected, shortAddress, address } = useTonConnect();
   const { events, isConnected } = useWebSocket();
+  const { services } = useRegistry();
+  const [activeTab, setActiveTab] = useState<Tab>("spending");
 
-  // Convert settlement events to transactions
   const transactions: Transaction[] = useMemo(() => {
     return events.map((evt, i) => ({
       id: `${evt.transaction}-${i}`,
-      service: `Payment to ${evt.payTo ? evt.payTo.slice(0, 8) + "..." : "unknown"}`,
+      service: evt.serviceName || `Payment to ${evt.payer?.slice(0, 8) || "unknown"}...`,
       amount: `${(Number(evt.amount) / 1_000_000).toFixed(2)} USDT`,
       status: "confirmed" as const,
       timestamp: typeof evt.timestamp === "number" ? evt.timestamp : Date.now(),
@@ -29,26 +31,45 @@ export default function Dashboard() {
         const num = parseFloat(tx.amount);
         return sum + (isNaN(num) ? 0 : num);
       }, 0)
-      .toFixed(3);
+      .toFixed(2);
   }, [transactions]);
+
+  const ownedServices = useMemo(() => {
+    if (!address) return [];
+    const ownerAddr = address.includes(":") ? address : "0:" + address;
+    return services.filter((s) => s.ownerAddress === ownerAddr);
+  }, [services, address]);
+
+  const totalRevenue = useMemo(() => {
+    return ownedServices
+      .reduce((sum, s) => sum + Number(s.totalRevenue) / 1_000_000, 0)
+      .toFixed(2);
+  }, [ownedServices]);
+
+  const totalCalls = useMemo(() => {
+    return ownedServices.reduce((sum, s) => sum + s.callCount, 0);
+  }, [ownedServices]);
 
   const stats = [
     {
-      icon: Wallet,
-      label: "Total Spent",
-      value: transactions.length > 0 ? totalSpent : "0",
+      icon: activeTab === "spending" ? Wallet : ArrowDownLeft,
+      label: activeTab === "spending" ? "Total Spent" : "Total Revenue",
+      value: activeTab === "spending" ? totalSpent : totalRevenue,
+      unit: "USDT",
       color: "#3390EC",
     },
     {
       icon: Activity,
-      label: "Transactions",
-      value: String(transactions.length),
+      label: activeTab === "spending" ? "Transactions" : "Total Calls",
+      value: activeTab === "spending" ? String(transactions.length) : String(totalCalls),
       color: "#8B5CF6",
     },
     {
       icon: TrendingUp,
-      label: "Success Rate",
-      value: transactions.length > 0 ? "100%" : "--",
+      label: activeTab === "spending" ? "Success Rate" : "Services",
+      value: activeTab === "spending"
+        ? transactions.length > 0 ? "100%" : "--"
+        : String(ownedServices.length),
       color: "#10B981",
     },
   ];
@@ -72,6 +93,27 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* Tab switcher */}
+      <section className="flex gap-2">
+        {([
+          { key: "spending" as Tab, label: "Spending", icon: ArrowUpRight },
+          { key: "revenue" as Tab, label: "Revenue", icon: ArrowDownLeft },
+        ]).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === key
+                ? "bg-[var(--color-primary)] text-white"
+                : "bg-[var(--color-secondary-bg)] text-[var(--color-hint)]"
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            {label}
+          </button>
+        ))}
+      </section>
+
       {/* Connection status */}
       <div
         className={`flex items-center gap-2 justify-center px-3 py-2 rounded-lg text-xs font-medium ${
@@ -83,12 +125,12 @@ export default function Dashboard() {
         {isConnected ? (
           <>
             <Wifi className="w-3.5 h-3.5" />
-            Live — receiving settlement events
+            Live — receiving events
           </>
         ) : (
           <>
             <WifiOff className="w-3.5 h-3.5" />
-            Connecting to facilitator...
+            Connecting to gateway...
           </>
         )}
       </div>
@@ -114,21 +156,55 @@ export default function Dashboard() {
         })}
       </section>
 
+      {/* Revenue tab — owned services */}
+      {activeTab === "revenue" && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
+            Your Services
+          </h2>
+          {ownedServices.length === 0 ? (
+            <div className="text-center py-6 text-sm text-[var(--color-hint)]">
+              {connected
+                ? "You haven't deployed any services yet."
+                : "Connect wallet to see your services."}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {ownedServices.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-secondary-bg)]"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-[var(--color-text)]">{s.name}</p>
+                    <p className="text-xs text-[var(--color-hint)]">{s.callCount} calls</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-emerald-500">
+                      {(Number(s.totalRevenue) / 1_000_000).toFixed(2)} USDT
+                    </p>
+                    <p className="text-[10px] text-[var(--color-hint)]">{s.priceReadable}/call</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Recent activity */}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-[var(--color-hint)] uppercase tracking-wider">
           Recent Activity
           {transactions.length > 0 && (
-            <span className="ml-2 text-[var(--color-text)]">
-              ({transactions.length})
-            </span>
+            <span className="ml-2 text-[var(--color-text)]">({transactions.length})</span>
           )}
         </h2>
         {transactions.length === 0 ? (
           <div className="text-center py-8 text-sm text-[var(--color-hint)]">
             {isConnected
-              ? "No settlement events yet this session. Transactions will appear here in real time."
-              : "Connecting to facilitator..."}
+              ? "No events yet. Transactions appear here in real time."
+              : "Connecting to gateway..."}
           </div>
         ) : (
           <div className="space-y-2">
