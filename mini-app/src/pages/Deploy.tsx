@@ -79,7 +79,7 @@ export default function Deploy() {
       }
 
       const priceUSDT = String(Math.round(priceNum * 1_000_000));
-      const ownerAddr = address.includes(":") ? address : "0:" + address;
+      const ownerAddr = address;
 
       const result = await register({
         name,

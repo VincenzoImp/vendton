@@ -12,7 +12,7 @@ export default function Profile() {
 
   const ownedDVMs = useMemo(() => {
     if (!address) return [];
-    const ownerAddr = address.includes(":") ? address : "0:" + address;
+    const ownerAddr = address;
     return dvms.filter((d) => d.ownerAddress === ownerAddr);
   }, [dvms, address]);
 
@@ -28,7 +28,7 @@ export default function Profile() {
     if (!deleteTarget || !address) return;
     setDeleting(true);
     try {
-      const ownerAddr = address.includes(":") ? address : "0:" + address;
+      const ownerAddr = address;
       await remove(deleteTarget.id, ownerAddr);
     } catch { /* silently fail */ }
     setDeleting(false);
