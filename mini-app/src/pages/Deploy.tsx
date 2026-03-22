@@ -255,7 +255,7 @@ export default function Deploy() {
               </span>
               <input
                 type="file"
-                accept=".js,.mjs,.ts,.txt,text/javascript,text/plain,application/javascript,*/*"
+                accept=".txt,text/plain"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
