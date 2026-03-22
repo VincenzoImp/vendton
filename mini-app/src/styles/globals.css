@@ -24,18 +24,26 @@ body {
   box-sizing: border-box;
 }
 
-/* TON Connect button — match app theme */
-[data-tc-connect-button] {
-  --tc-connect-button-background: var(--color-secondary-bg) !important;
-  --tc-connect-button-color: var(--color-text) !important;
-}
-
-button[data-tc-connect-button] {
+/* TON Connect button — force light theme */
+#tc-connect-button button,
+#tc-connect-button > button,
+[data-tc-connect-button],
+div[data-tc-wallets-modal-container] button,
+.go2072408551,
+.go3801567768 {
   background: var(--color-secondary-bg) !important;
   color: var(--color-text) !important;
 }
 
-div[data-tc-dropdown-container] {
+/* TON Connect dropdown */
+#tc-connect-button div[class*="dropdown"],
+#tc-connect-button ul {
   background: var(--color-bg) !important;
   border-color: var(--color-secondary-bg) !important;
+}
+
+/* Force all TON Connect elements to use app colors */
+[id^="tc-"] button {
+  background: var(--color-secondary-bg) !important;
+  color: var(--color-text) !important;
 }
