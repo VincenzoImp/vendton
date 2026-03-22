@@ -1,55 +1,80 @@
 # VendTON
 
-**Open marketplace where AI agents discover, use, and pay for DVMs (Data Vending Machines) on TON.**
+**Deploy paid API endpoints in seconds. Earn USDT on TON.**
 
-## The Problem
+VendTON is an open marketplace for Data Vending Machines (DVMs) on the TON blockchain. Anyone can deploy a JavaScript function as a paid API endpoint. AI agents and users discover DVMs, pay with USDT via the x402 protocol, and chain multiple DVMs to accomplish complex tasks — all through Telegram.
 
-AI agents on Telegram can reason, plan, and execute — but they cannot pay for services. Every agent-to-API interaction requires a human in the loop.
+## Live Demo
 
-Coinbase's x402 protocol (HTTP 402-based payments) exists on Ethereum and Solana. It does not exist on TON — the blockchain behind Telegram and its 1B+ users.
+- **Mini App**: [vendton.vercel.app](https://vendton.vercel.app)
+- **Telegram Bot**: [@vendton_bot](https://t.me/vendton_bot)
+- **Gateway API**: [vendton-gateway.up.railway.app](https://vendton-gateway.up.railway.app/health)
 
-Traditional payment rails (Stripe, Visa) don't support autonomous machine-to-machine payments. There is no way for an AI agent on TON to pay for an API call without human approval.
+## On-Chain Verification
 
-## The Solution
+| What | Link |
+|------|------|
+| Agent wallet (pays for DVMs) | [EQCaXWPU...QcBK](https://testnet.tonviewer.com/EQCaXWPU1Nj5zpxP2nmPGE-iJbxHaEqvj-TTkNmIbmF0QcBK) |
+| DVM provider 1 — platform | [EQAWWAQAZJl...MITD](https://testnet.tonviewer.com/EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD) |
+| DVM provider 2 — user | [0QA6eW1b...l28u](https://testnet.tonviewer.com/0QA6eW1bjOhzGOFaPwfbjqufwuaXpVzynPB9q6ZSBoKHl28u) |
+| ENS domain owner (Sepolia) | [0x64fC...284a](https://sepolia.etherscan.io/address/0x64fC5868273CAd0204dce42527e647db117C284a) |
+| vendton.eth on ENS | [vendton.eth](https://sepolia.app.ens.domains/vendton.eth) |
+| Weather DVM ENS subdomain | [weather-data.eqawwaqa.vendton.eth](https://sepolia.app.ens.domains/weather-data.eqawwaqa.vendton.eth) |
 
-VendTON brings x402 to TON and wraps it in an open marketplace:
-
-1. **DVM providers** publish APIs, set prices in USDT, connect their wallet — earn every time someone calls their DVM
-2. **Users** bring their own Claude API key, connect their TON wallet, ask anything — Claude discovers and pays for DVMs autonomously
-3. **Autonomous agents** with their own wallets browse and pay for DVMs via the gateway API
-
-Payments settle in USDT (Jetton) on TON via x402. Identity uses ENS on Sepolia (`vendton.eth` with `address.ton` text records).
+All payments are real USDT Jetton transfers on TON testnet. All ENS subdomains are real on Ethereum Sepolia.
 
 ## How It Works
 
-| Page | What it does |
-|------|-------------|
-| **Marketplace** | Browse available DVMs with search, tags, and pricing |
-| **Deploy** | Publish your API as a DVM — connect wallet, set price, start earning |
-| **Playground** | Enter your Claude API key, ask anything — Claude discovers and pays DVMs from the marketplace |
-| **Dashboard** | Track your earnings (as provider) and spending (as consumer) |
+### 1. Deploy a DVM ("Create" tab)
 
-### Payment Flow (x402)
+Write JavaScript, upload a `.txt` file, or paste an external API URL. Set a price in USDT, connect your wallet, pay a 0.05 TON creation fee. Your DVM gets an automatic ENS identity on Sepolia (e.g. `crypto-price.uqa6ew1b.vendton.eth`) with `address.ton` text record pointing to your TON wallet.
+
+### 2. Ask AI ("Ask" tab)
+
+Connect your wallet and ask anything. The AI discovers relevant DVMs on the marketplace, requests payment approval from your wallet via TON Connect, calls the DVMs, and chains results. You see every step in real time.
+
+### 3. Earn ("Profile" tab)
+
+Track your deployed DVMs, see how many calls each received, and how much USDT you earned. Delete DVMs you no longer need — the ENS subdomain is revoked on-chain.
+
+## Payment Flow (x402)
 
 ```
 1. Agent calls GET /dvm/:owner/:name
-2. Gateway responds: 402 Payment Required (X-PAYMENT-REQUIRED header)
-3. Agent signs USDT Jetton transfer (Ed25519, V5R1 wallet)
-4. Agent retries with signed BoC in X-PAYMENT header
-5. Gateway verifies: signature, wallet derivation, Jetton balance
-6. Gateway broadcasts to TON, confirms via seqno polling
-7. Gateway returns 200 with DVM data
+2. Gateway returns 402 + payment requirements (payTo = owner's Jetton wallet)
+3. User approves payment in TON Connect (or agent signs automatically)
+4. Gateway verifies and executes DVM code
+5. USDT transfers from caller to DVM owner on TON
 ```
+
+Two payment paths:
+- **Users**: TON Connect → approve in wallet → `X-PAYMENT-TX` header
+- **Agents**: Ed25519 signed BoC → `X-PAYMENT` header → verify + broadcast on-chain
+
+## ENS Integration
+
+Every DVM gets a real ENS subdomain on Ethereum Sepolia:
+
+```
+<dvm-slug>.<owner-prefix>.vendton.eth
+```
+
+Created on-chain via the ENS Registry (`setSubnodeRecord`), with text records:
+- `address.ton` → owner's TON wallet address
+- `description` → DVM description
+
+The AI agent can discover DVMs by ENS name using the `resolve_ens` tool.
 
 ## Architecture
 
 ```
 vendton/
-├── packages/ton/       x402 SDK for TON — client, facilitator, Express middleware
-├── gateway/            Express + SQLite + WebSocket + x402 payment gate
-├── agent/              Claude with tool use + TON wallet (autonomous payments)
-├── mini-app/           React 19 + Vite + Telegram Mini App SDK + TON Connect
-└── bot/                grammY Telegram bot with deep links
+├── packages/ton/       @x402/ton SDK — verify, settle, paymentMiddleware
+├── gateway/            Express + SQLite + vm executor + x402 + ENS writer
+├── agent/              Claude AI + TON wallet + tool use
+├── mini-app/           React 19 + Vite + TMA SDK + TON Connect
+├── bot/                grammY Telegram bot
+└── examples/           Example DVM code files (.txt)
 ```
 
 ## Quick Start
@@ -57,63 +82,66 @@ vendton/
 ```bash
 npm install
 
-# Gateway (port 4000) — DVM registry, x402 facilitator, proxy
+# Gateway (port 4000)
 npm run dev:gateway
 
-# Agent (port 4001) — AI with autonomous DVM discovery and payment
+# Agent (port 4001)
 AGENT_PORT=4001 npm run dev:agent
 
 # Mini App (port 5173)
 npm run dev:mini-app
 
-# Telegram Bot (requires BOT_TOKEN env var)
+# Bot
 BOT_TOKEN=... npm run dev:bot
 ```
 
-## Example DVMs
+## DVM Code Format
 
-The gateway starts empty. Anyone can deploy DVMs via the Deploy page or API. During the demo, we deploy these:
+DVMs are JavaScript functions executed serverlessly. They receive an `input` object and must return JSON:
 
-| DVM | Price | What it does |
-|-----|-------|-------------|
-| Weather Data | 0.10 USDT | Weather from wttr.in for any city |
-| Crypto Price | 0.05 USDT | Crypto prices from CoinGecko for any coin |
-| Sum Calculator | 0.02 USDT | Adds two numbers — demonstrates DVM composability |
+```javascript
+const city = input.city || "Lausanne";
+const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=46.52&longitude=6.63&current=temperature_2m`);
+const data = await res.json();
+return { city, temperature: data.current.temperature_2m };
+```
+
+Available globals: `input`, `fetch`, `JSON`, `Math`, `Date`, `URL`. 10-second timeout. Sandboxed via `node:vm`.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Blockchain | TON testnet, USDT Jetton (TEP-74), V5R1 wallets |
+| Payment | x402 protocol (HTTP 402), Ed25519 signature verification |
+| Identity | ENS on Ethereum Sepolia, `address.ton` text records |
+| AI | Claude claude-sonnet-4-20250514 with tool use (4 tools) |
+| Backend | Express, SQLite (better-sqlite3), WebSocket, Zod |
+| Frontend | React 19, Vite 6, Tailwind CSS v4, Framer Motion |
+| Telegram | @telegram-apps/sdk-react, @tonconnect/ui-react, grammY |
 
 ## Demo Flow
 
-1. Start with empty marketplace
-2. Deploy "Weather Data", "Crypto Price", and "Sum Calculator" DVMs
-3. Open Playground, enter Claude API key
-4. Ask: "Get the temperature in Lausanne, the price of Bitcoin, and sum them"
-5. Watch Claude discover 3 DVMs, call each one, pay 0.17 USDT total, chain results
+1. Start with empty marketplace — zero DVMs
+2. Deploy **Weather Data** DVM (Open-Meteo API, 0.10 USDT/call)
+3. Deploy **Crypto Price** DVM (CoinGecko API, 0.10 USDT/call)
+4. Open **Ask AI**: "Get the weather in Lausanne and the price of Bitcoin"
+5. Watch the AI discover both DVMs, request payment approval, call them, chain results
+6. Check **Profile** to see earnings per DVM
+7. Verify on [TON testnet explorer](https://testnet.tonviewer.com/EQCaXWPU1Nj5zpxP2nmPGE-iJbxHaEqvj-TTkNmIbmF0QcBK) that USDT actually moved
+8. Verify on [ENS Sepolia](https://sepolia.app.ens.domains/vendton.eth) that subdomains were created
 
-## Technical Details
+## For AlphaTON Capital
 
-**x402 verification:**
-- Ed25519 signature verification over V5R1 external message
-- Wallet derivation check (public key → address)
-- On-chain Jetton ownership via `get_wallet_address`
-- Balance sufficiency via `get_wallet_data`
-- 10 USDT max per transaction
+Cocoon AI agents run on $82.5M of GPU infrastructure. They can think and plan — but they cannot pay.
 
-**ENS integration (Sepolia testnet):**
-- `vendton.eth` registered on Sepolia
-- `address.ton` text record for cross-chain identity
-- Hierarchical naming: `<dvm>.<owner>.vendton.eth`
+VendTON is the payment layer those agents need. Any developer deploys a paid API in 30 seconds. Any agent discovers it, pays in USDT, and gets the data. No API keys, no billing accounts — just USDT on TON.
 
-**Stack:**
-- TypeScript across the full stack
-- TON: @ton/core, @ton/ton, V5R1 wallets, USDT Jetton (TEP-74)
-- AI: Anthropic Claude with tool use (user provides their own API key)
-- Frontend: React 19, Vite 6, Tailwind CSS v4, Framer Motion
-- Database: SQLite with better-sqlite3 (WAL mode)
-- Identity: ENS via viem + @ensdomains/ensjs on Sepolia
-- Bot: grammY + Telegram Mini App SDK
-
-## Status
-
-Working prototype on TON testnet (runs locally). The x402 payment flow, DVM registry, AI agent, Mini App, and ENS integration are all implemented and functional.
+- First x402 implementation on TON
+- Real payments: USDT Jetton transfers on-chain
+- Real identity: ENS subdomains on Sepolia with `address.ton` records
+- Community-driven: anyone deploys, anyone earns
+- Three ways to create DVMs: write code, upload file, proxy URL
 
 ## License
 
