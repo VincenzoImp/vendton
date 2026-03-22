@@ -18,6 +18,12 @@ const AGENT_PRIVATE_KEY = process.env.AGENT_PRIVATE_KEY;
 const USDT_MASTER = process.env.USDT_MASTER_ADDRESS ?? "EQAAYQf_d4ekMhxzZ-DQeKXK_KMFwdmK7SvFRxNlkHhN0VBi";
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://localhost:4000";
 
+// Whitelist of wallet addresses allowed to use the hosted AI
+// If empty, everyone can use it. Comma-separated in env.
+const ALLOWED_WALLETS = process.env.ALLOWED_WALLETS
+  ? process.env.ALLOWED_WALLETS.split(",").map(w => w.trim().toLowerCase())
+  : [];
+
 if (!ANTHROPIC_API_KEY) {
   console.warn("ANTHROPIC_API_KEY not set — users must provide their own API key");
 }
@@ -493,10 +499,18 @@ if (PORT) {
   app.use(express.json());
 
   app.post("/run", async (req, res) => {
-    const { prompt, apiKey } = req.body;
+    const { prompt, apiKey, walletAddress } = req.body;
     if (!prompt) {
       res.status(400).json({ error: "prompt is required" });
       return;
+    }
+
+    if (ALLOWED_WALLETS.length > 0) {
+      const normalized = (walletAddress || "").toLowerCase();
+      if (!walletAddress || !ALLOWED_WALLETS.some(w => normalized.includes(w))) {
+        res.status(403).json({ error: "Your wallet is not authorized to use this service" });
+        return;
+      }
     }
     console.log(`\n[HTTP] Agent processing: "${prompt}"`);
     try {
@@ -517,10 +531,19 @@ if (PORT) {
   });
 
   app.post("/run/stream", async (req, res) => {
-    const { prompt, apiKey } = req.body;
+    const { prompt, apiKey, walletAddress } = req.body;
     if (!prompt) {
       res.status(400).json({ error: "prompt is required" });
       return;
+    }
+
+    // Check wallet whitelist (if configured)
+    if (ALLOWED_WALLETS.length > 0) {
+      const normalized = (walletAddress || "").toLowerCase();
+      if (!walletAddress || !ALLOWED_WALLETS.some(w => normalized.includes(w))) {
+        res.status(403).json({ error: "Your wallet is not authorized to use this service" });
+        return;
+      }
     }
 
     console.log(`\n[HTTP/SSE] Agent streaming: "${prompt}"`);

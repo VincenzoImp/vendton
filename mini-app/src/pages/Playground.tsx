@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Key, Info, Wallet } from "lucide-react";
+import { Sparkles, Loader2, Wifi, WifiOff, Send, Zap, ArrowRight, DollarSign, Info, Wallet } from "lucide-react";
 import TransactionCard, { type Transaction } from "../components/payment/TransactionCard";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useTonConnect } from "../hooks/useTonConnect";
@@ -19,8 +19,7 @@ const PRESET_PROMPTS = [
 
 export default function Playground() {
   const { events, isConnected } = useWebSocket();
-  const { connected, shortAddress, connect: connectWallet, sendJettonTransfer } = useTonConnect();
-  const [apiKey, setApiKey] = useState("");
+  const { connected, shortAddress, address, connect: connectWallet, sendJettonTransfer } = useTonConnect();
   const [prompt, setPrompt] = useState("");
   const [agentResponse, setAgentResponse] = useState("");
   const [agentLoading, setAgentLoading] = useState(false);
@@ -168,7 +167,7 @@ export default function Playground() {
       const response = await fetch(`${AGENT_URL}/run/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: input, apiKey: apiKey || undefined }),
+        body: JSON.stringify({ prompt: input, walletAddress: address || undefined }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -228,36 +227,6 @@ export default function Playground() {
         </div>
       </section>
 
-      {/* API Key Input */}
-      <section className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Key className="w-4 h-4 text-purple-500" />
-          <span className="text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-            Claude API Key
-          </span>
-          {apiKey ? (
-            <span className="ml-auto flex items-center gap-1 text-[10px] font-medium text-emerald-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Ready
-            </span>
-          ) : (
-            <span className="ml-auto text-[10px] text-[var(--color-hint)]">
-              Required
-            </span>
-          )}
-        </div>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-ant-..."
-          className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none font-mono"
-        />
-        <p className="text-[10px] text-[var(--color-hint)]">
-          Your key is sent directly to the agent and never stored.
-        </p>
-      </section>
-
       {/* Wallet Status */}
       {connected ? (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10">
@@ -283,9 +252,8 @@ export default function Playground() {
           </span>
         </div>
         <ol className="text-[11px] text-[var(--color-hint)] leading-relaxed space-y-0.5 list-decimal list-inside">
-          <li>Enter your Claude API key</li>
           <li>Connect your TON wallet</li>
-          <li>Ask anything -- Claude discovers and uses paid DVMs</li>
+          <li>Ask anything — AI discovers and uses paid DVMs</li>
           <li>Approve each payment from your wallet</li>
         </ol>
       </section>
@@ -297,14 +265,14 @@ export default function Playground() {
             type="text"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && apiKey && runAgent(prompt)}
-            placeholder={apiKey ? "Ask anything..." : "Enter your API key first"}
-            disabled={agentLoading || !apiKey}
+            onKeyDown={(e) => e.key === "Enter" && connected && runAgent(prompt)}
+            placeholder={connected ? "Ask anything..." : "Connect wallet first"}
+            disabled={agentLoading || !connected}
             className="flex-1 px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none disabled:opacity-50"
           />
           <button
             onClick={() => runAgent(prompt)}
-            disabled={agentLoading || !prompt.trim() || !apiKey}
+            disabled={agentLoading || !prompt.trim() || !connected}
             className="px-4 py-3 rounded-xl text-white font-semibold disabled:opacity-50"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
@@ -322,7 +290,7 @@ export default function Playground() {
             <button
               key={i}
               onClick={() => { setPrompt(p); runAgent(p); }}
-              disabled={agentLoading || !apiKey}
+              disabled={agentLoading || !connected}
               className="px-3 py-1.5 rounded-lg text-[11px] bg-[var(--color-secondary-bg)] text-[var(--color-hint)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
             >
               <Zap className="w-3 h-3 inline mr-1" />
