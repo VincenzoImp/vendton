@@ -10,6 +10,7 @@ x402 is just an HTTP header. There's no marketplace to discover paid APIs, no pr
 
 | | |
 |---|---|
+| **Demo Video** | [YouTube](https://youtu.be/GLRueeCCAfo) |
 | **Mini App** | [vendton.vercel.app](https://vendton.vercel.app) |
 | **Pitch Deck** | [vendton-deck.vercel.app](https://vendton-deck.vercel.app) |
 | **Telegram Bot** | [@vendton_bot](https://t.me/vendton_bot) |
