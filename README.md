@@ -183,7 +183,7 @@ Telegram provides the AI. Users provide the APIs. **VendTON connects them.**
 6. Approve 0.10 + 0.10 USDT from your wallet
 7. Get the combined answer — real weather + real Bitcoin price
 8. Check **Profile** — see your DVMs earning
-9. Verify on [TON explorer](https://testnet.tonviewer.com/EQCaXWPU1Nj5zpxP2nmPGE-iJbxHaEqvj-TTkNmIbmF0QcBK)
+9. Verify on [TON explorer](https://testnet.tonviewer.com/EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD)
 10. Verify on [ENS Sepolia](https://sepolia.app.ens.domains/vendton.eth)
 
 ## BSA EPFL Hackathon 2026
