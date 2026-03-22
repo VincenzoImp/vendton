@@ -253,7 +253,7 @@ export default function Deploy() {
             <label className="flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed border-[var(--color-secondary-bg)] cursor-pointer hover:border-[var(--color-primary)] transition-colors">
               <Upload className="w-8 h-8 text-[var(--color-hint)]" />
               <span className="text-sm text-[var(--color-hint)]">
-                {code ? "File loaded ✓ — click to replace" : "Drop a .js file or click to browse"}
+                {code ? "File loaded ✓ — click to replace" : "Upload a .txt file"}
               </span>
               <input
                 type="file"
