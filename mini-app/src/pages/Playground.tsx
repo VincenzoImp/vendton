@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, Send, Zap, ArrowRight, DollarSign, Wallet } from "lucide-react";
+import { Sparkles, Loader2, Send, Zap, ArrowRight, DollarSign } from "lucide-react";
 import { useTonConnect } from "../hooks/useTonConnect";
 
 const AGENT_URL =
@@ -16,7 +16,7 @@ const PRESET_PROMPTS = [
 ];
 
 export default function Playground() {
-  const { connected, shortAddress, address, connect: connectWallet, sendJettonTransfer } = useTonConnect();
+  const { connected, address, sendJettonTransfer } = useTonConnect();
   const [prompt, setPrompt] = useState("");
   const [agentResponse, setAgentResponse] = useState("");
   const [agentLoading, setAgentLoading] = useState(false);
@@ -188,23 +188,6 @@ export default function Playground() {
           </p>
         </div>
       </section>
-
-      {/* Wallet */}
-      {connected ? (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10">
-          <Wallet className="w-4 h-4 text-emerald-600" />
-          <span className="text-xs font-medium text-emerald-600">{shortAddress}</span>
-        </div>
-      ) : (
-        <button
-          onClick={connectWallet}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white"
-          style={{ backgroundColor: "var(--color-primary)" }}
-        >
-          <Wallet className="w-4 h-4" />
-          Connect Wallet
-        </button>
-      )}
 
       {/* Input */}
       <section className="space-y-3">
