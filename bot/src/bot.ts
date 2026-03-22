@@ -13,121 +13,19 @@ const bot = new Bot(BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
   await ctx.reply(
-    "Welcome to VendTON!\n\n" +
-      "The open marketplace for paid AI DVMs (Data Vending Machines) on TON.\n\n" +
-      "Browse DVMs, deploy your own API to earn USDT, or use the AI Playground to call paid DVMs with your Claude API key.\n\n" +
-      "Tap below to get started:",
+    "Welcome to VendTON!\n\nDeploy paid API endpoints, earn USDT, or ask AI to use them.",
     {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Browse DVMs",
+              text: "Open VendTON",
               web_app: { url: MINI_APP_URL },
             },
           ],
-          [
-            {
-              text: "Deploy a DVM",
-              web_app: { url: `${MINI_APP_URL}/deploy` },
-            },
-          ],
-          [
-            {
-              text: "AI Playground",
-              web_app: { url: `${MINI_APP_URL}/playground` },
-            },
-          ],
-          [
-            {
-              text: "My Profile",
-              web_app: { url: `${MINI_APP_URL}/profile` },
-            },
-          ],
         ],
       },
     },
-  );
-});
-
-bot.command("deploy", async (ctx) => {
-  await ctx.reply(
-    "Deploy your API as a paid DVM and start earning USDT:",
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "Deploy Now",
-              web_app: { url: `${MINI_APP_URL}/deploy` },
-            },
-          ],
-        ],
-      },
-    },
-  );
-});
-
-bot.command("dvms", async (ctx) => {
-  await ctx.reply("Browse available paid DVMs on the marketplace:", {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "Open Marketplace",
-            web_app: { url: MINI_APP_URL },
-          },
-        ],
-      ],
-    },
-  });
-});
-
-bot.command("playground", async (ctx) => {
-  await ctx.reply(
-    "Use the AI Playground — bring your Claude API key and explore paid DVMs:",
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "Open Playground",
-              web_app: { url: `${MINI_APP_URL}/playground` },
-            },
-          ],
-        ],
-      },
-    },
-  );
-});
-
-bot.command("profile", async (ctx) => {
-  await ctx.reply(
-    "View your deployed DVMs and earnings:",
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "Open Profile",
-              web_app: { url: `${MINI_APP_URL}/profile` },
-            },
-          ],
-        ],
-      },
-    },
-  );
-});
-
-bot.command("help", async (ctx) => {
-  await ctx.reply(
-    "VendTON Bot Commands:\n\n" +
-      "/start — Welcome & open app\n" +
-      "/dvms — Browse paid DVMs\n" +
-      "/deploy — Publish your API as a DVM\n" +
-      "/playground — AI Playground with Claude\n" +
-      "/profile — Your DVMs & earnings\n" +
-      "/help — This message",
   );
 });
 
