@@ -4,7 +4,6 @@ import cors from "cors";
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
 import { TonClient } from "@ton/ton";
-import { Address, beginCell } from "@ton/core";
 import { z } from "zod";
 import {
   verify as sdkVerify,
@@ -290,20 +289,6 @@ app.all("/dvm/:owner/:name", async (req: Request, res: Response) => {
 
   // No payment → return 402
   if (!paymentHeader) {
-    // Derive the owner's Jetton wallet address (where USDT should be sent)
-    let payToAddress = dvm.ownerAddress;
-    try {
-      const ownerAddr = Address.parse(dvm.ownerAddress);
-      const jettonMaster = Address.parse(config.usdtAssetAddress);
-      const result = await tonClient.runMethod(jettonMaster, "get_wallet_address", [
-        { type: "slice", cell: beginCell().storeAddress(ownerAddr).endCell() },
-      ]);
-      payToAddress = result.stack.readAddress().toString();
-      console.log(`[proxy] Jetton wallet for ${dvm.ownerAddress.slice(0,10)}...: ${payToAddress}`);
-    } catch (err) {
-      console.warn(`[proxy] Could not derive Jetton wallet, using owner address directly`);
-    }
-
     const requirements = {
       x402Version: X402_VERSION,
       accepts: [{
@@ -311,7 +296,7 @@ app.all("/dvm/:owner/:name", async (req: Request, res: Response) => {
         network: TON_NETWORK,
         amount: dvm.priceUSDT,
         asset: config.usdtAssetAddress,
-        payTo: payToAddress,
+        payTo: dvm.ownerAddress,
         maxTimeoutSeconds: 60,
         extra: { name: "USDT", decimals: 6, dvmId: dvm.id, dvmName: dvm.name },
       }],
