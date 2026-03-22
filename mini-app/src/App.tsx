@@ -8,6 +8,7 @@ import Navigation from "./components/layout/Navigation";
 import Marketplace from "./pages/Marketplace";
 import Deploy from "./pages/Deploy";
 import Playground from "./pages/Playground";
+import Profile from "./pages/Profile";
 
 const manifestUrl =
   import.meta.env.VITE_TONCONNECT_MANIFEST_URL ||
@@ -22,6 +23,7 @@ function AppLayout() {
           <Route path="/" element={<Marketplace />} />
           <Route path="/deploy" element={<Deploy />} />
           <Route path="/playground" element={<Playground />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Marketplace />} />
         </Routes>
       </main>

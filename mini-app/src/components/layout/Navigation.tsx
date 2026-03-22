@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Compass, Hammer, Sparkles } from "lucide-react";
+import { Compass, Hammer, Sparkles, User } from "lucide-react";
 
 const tabs = [
   { to: "/", icon: Compass, label: "Explore" },
   { to: "/deploy", icon: Hammer, label: "Create" },
   { to: "/playground", icon: Sparkles, label: "Ask" },
+  { to: "/profile", icon: User, label: "Profile" },
 ];
 
 export default function Navigation() {
