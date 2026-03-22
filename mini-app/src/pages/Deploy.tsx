@@ -119,27 +119,29 @@ export default function Deploy() {
             <strong>{name}</strong> is now on the marketplace. Agents can discover and pay for it automatically.
           </p>
           {deployedEnsName && (
-            <div className="px-4 py-2 rounded-lg bg-purple-500/10 inline-block">
+            <div className="px-4 py-2 rounded-lg bg-purple-500/10 mx-auto">
               <p className="text-xs text-purple-400 font-mono">{deployedEnsName}</p>
-              <p className="text-[10px] text-[var(--color-hint)] mt-0.5">ENS identity registered on Sepolia</p>
+              <p className="text-[10px] text-[var(--color-hint)] mt-0.5">ENS identity on Sepolia</p>
             </div>
           )}
-          <button
-            onClick={() => {
-              setDeployed(false);
-              setName("");
-              setDescription("");
-              setCode("");
-              setEndpoint("");
-              setPrice("0.10");
-              setTags([]);
-              setDeployedEnsName("");
-            }}
-            className="px-6 py-3 rounded-xl text-white font-semibold text-sm"
-            style={{ backgroundColor: "var(--color-primary)" }}
-          >
-            Create Another
-          </button>
+          <div>
+            <button
+              onClick={() => {
+                setDeployed(false);
+                setName("");
+                setDescription("");
+                setCode("");
+                setEndpoint("");
+                setPrice("0.10");
+                setTags([]);
+                setDeployedEnsName("");
+              }}
+              className="px-6 py-3 rounded-xl text-white font-semibold text-sm"
+              style={{ backgroundColor: "var(--color-primary)" }}
+            >
+              Create Another
+            </button>
+          </div>
         </motion.div>
       </div>
     );
