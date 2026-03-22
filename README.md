@@ -21,7 +21,6 @@ x402 is just an HTTP header. There's no marketplace to discover paid APIs, no pr
 
 | What | Explorer |
 |------|---------|
-| Agent wallet | [TON Testnet](https://testnet.tonviewer.com/EQCaXWPU1Nj5zpxP2nmPGE-iJbxHaEqvj-TTkNmIbmF0QcBK) |
 | DVM provider — platform | [TON Testnet](https://testnet.tonviewer.com/EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD) |
 | DVM provider — community | [TON Testnet](https://testnet.tonviewer.com/0QA6eW1bjOhzGOFaPwfbjqufwuaXpVzynPB9q6ZSBoKHl28u) |
 | Platform wallet (deploy fees) | [TON Testnet](https://testnet.tonviewer.com/EQAWWAQAZJl_njQR85ySavDNhB0S0DiAzBCGj5IoGif0MITD) |
