@@ -47,7 +47,7 @@ class DVMRegistry {
   private getActiveStmt = db.prepare(`SELECT * FROM dvms WHERE status = 'active'`);
   private getByOwnerStmt = db.prepare(`SELECT * FROM dvms WHERE owner_address = ? AND status = 'active'`);
   private incrementCallsStmt = db.prepare(`UPDATE dvms SET call_count = call_count + 1, total_revenue = CAST((CAST(total_revenue AS INTEGER) + CAST(? AS INTEGER)) AS TEXT) WHERE id = ?`);
-  private removeStmt = db.prepare(`UPDATE dvms SET status = 'inactive' WHERE id = ?`);
+  private removeStmt = db.prepare(`DELETE FROM dvms WHERE id = ?`);
   private countStmt = db.prepare(`SELECT COUNT(*) as count FROM dvms`);
 
   register(input: {
