@@ -4,6 +4,18 @@
 
 VendTON is an open marketplace for Data Vending Machines (DVMs) on the TON blockchain. Anyone can deploy a JavaScript function as a paid API endpoint. AI agents and users discover DVMs, pay with USDT via the x402 protocol, and chain multiple DVMs to accomplish complex tasks — all through Telegram.
 
+## Vision
+
+VendTON creates value for every participant in the ecosystem:
+
+**For users** — Deploy your API as a DVM, set a price, and earn USDT every time someone calls it. No infrastructure to manage — write code, upload it, start earning. Your DVM gets a permanent ENS identity on-chain.
+
+**For Telegram** — A community-driven marketplace of paid APIs living inside Telegram. Users build for users. The more DVMs deployed, the more valuable the ecosystem becomes. A new economy powered by TON.
+
+**For AI agents** — TON becomes the blockchain where agents pay for data. Any agent with a wallet can discover DVMs, pay in USDT, and access real-world data — weather, prices, translations, anything the community builds. No API keys, no subscriptions. Just pay and use.
+
+**For end users** — An AI assistant powered by your own wallet. Connect your TON wallet, ask anything, and the AI finds the best DVMs on the marketplace, asks for your approval, pays with your USDT, and returns the answer. You control what you spend.
+
 ## Live Demo
 
 - **Mini App**: [vendton.vercel.app](https://vendton.vercel.app)
