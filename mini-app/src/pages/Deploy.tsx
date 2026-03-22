@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Hammer, Loader2, AlertTriangle, Rocket, Code2, Globe, PartyPopper } from "lucide-react";
+import { Hammer, Loader2, AlertTriangle, Rocket, Code2, Upload, Globe, PartyPopper } from "lucide-react";
 import { toNano } from "@ton/core";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useDVMs } from "../hooks/useDVMs";
+
+type SourceMode = "write" | "upload" | "url";
 
 const AVAILABLE_TAGS = ["weather", "data", "ai", "nlp", "translation", "entertainment", "sentiment", "text", "finance", "health", "image"];
 
@@ -26,6 +28,7 @@ export default function Deploy() {
   const [method, setMethod] = useState<"GET" | "POST">("GET");
   const [price, setPrice] = useState("0.10");
   const [tags, setTags] = useState<string[]>([]);
+  const [sourceMode, setSourceMode] = useState<SourceMode>("write");
   const [deployedEnsName, setDeployedEnsName] = useState("");
 
   const [deploying, setDeploying] = useState(false);
@@ -199,69 +202,86 @@ export default function Deploy() {
             />
           </div>
 
-          {/* Code Section */}
+          {/* Source Mode Tabs */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <Code2 className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-                  Code (JavaScript)
-                </label>
-              </div>
-              <label className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[var(--color-secondary-bg)] text-[var(--color-hint)] cursor-pointer hover:text-[var(--color-text)] transition-colors">
-                Upload .js
-                <input
-                  type="file"
-                  accept=".js,.mjs,.ts"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      file.text().then((text) => setCode(text));
-                    }
-                  }}
-                />
-              </label>
+            <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider mb-2">
+              Source *
+            </label>
+            <div className="flex gap-1 p-1 rounded-xl bg-[var(--color-secondary-bg)]">
+              {([
+                { key: "write" as SourceMode, icon: Code2, label: "Write Code" },
+                { key: "upload" as SourceMode, icon: Upload, label: "Upload File" },
+                { key: "url" as SourceMode, icon: Globe, label: "External URL" },
+              ]).map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setSourceMode(key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    sourceMode === key
+                      ? "bg-[var(--color-bg)] text-[var(--color-text)] shadow-sm"
+                      : "text-[var(--color-hint)]"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              ))}
             </div>
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder={CODE_PLACEHOLDER}
-              rows={8}
-              className="w-full px-4 py-3 rounded-xl text-sm font-mono bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none resize-none leading-relaxed"
-              spellCheck={false}
-            />
-            <p className="text-[10px] text-[var(--color-hint)] mt-1">
-              Receives <code className="font-semibold">input</code> object. Has <code className="font-semibold">fetch</code>, <code className="font-semibold">JSON</code>, <code className="font-semibold">Math</code>. Must return JSON.
-            </p>
           </div>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[var(--color-secondary-bg)]" />
-            <span className="text-[10px] font-semibold text-[var(--color-hint)] uppercase tracking-widest">or</span>
-            <div className="flex-1 h-px bg-[var(--color-secondary-bg)]" />
-          </div>
+          {/* Write Code */}
+          {sourceMode === "write" && (
+            <div>
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder={CODE_PLACEHOLDER}
+                rows={8}
+                className="w-full px-4 py-3 rounded-xl text-sm font-mono bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none resize-none leading-relaxed"
+                spellCheck={false}
+              />
+              <p className="text-[10px] text-[var(--color-hint)] mt-1">
+                Receives <code className="font-semibold">input</code> · Has <code className="font-semibold">fetch</code> · Return JSON
+              </p>
+            </div>
+          )}
+
+          {/* Upload File */}
+          {sourceMode === "upload" && (
+            <label className="flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed border-[var(--color-secondary-bg)] cursor-pointer hover:border-[var(--color-primary)] transition-colors">
+              <Upload className="w-8 h-8 text-[var(--color-hint)]" />
+              <span className="text-sm text-[var(--color-hint)]">
+                {code ? "File loaded ✓ — click to replace" : "Drop a .js file or click to browse"}
+              </span>
+              <input
+                type="file"
+                accept=".js,.mjs,.ts"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    file.text().then((text) => { setCode(text); });
+                  }
+                }}
+              />
+            </label>
+          )}
 
           {/* External URL */}
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Globe className="w-3.5 h-3.5 text-blue-400" />
-              <label className="block text-xs font-semibold text-[var(--color-hint)] uppercase tracking-wider">
-                External API URL
-              </label>
+          {sourceMode === "url" && (
+            <div>
+              <input
+                type="text"
+                value={endpoint}
+                onChange={(e) => setEndpoint(e.target.value)}
+                placeholder="https://api.example.com/endpoint"
+                className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
+              />
+              <p className="text-[10px] text-[var(--color-hint)] mt-1">
+                VendTON proxies requests to your API after payment
+              </p>
             </div>
-            <input
-              type="text"
-              value={endpoint}
-              onChange={(e) => setEndpoint(e.target.value)}
-              placeholder="https://api.example.com/endpoint"
-              className="w-full px-4 py-3 rounded-xl text-sm bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none"
-            />
-            <p className="text-[10px] text-[var(--color-hint)] mt-1">
-              Proxy calls to an existing API instead of writing code
-            </p>
-          </div>
+          )}
 
           {/* Method + Price */}
           <div className="grid grid-cols-2 gap-3">
