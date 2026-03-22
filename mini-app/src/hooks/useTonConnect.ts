@@ -10,10 +10,19 @@ export function useTonConnect() {
 
   const connected = !!wallet;
 
-  const address = useMemo(() => {
+  const rawAddress = useMemo(() => {
     if (!wallet) return null;
     return wallet.account.address;
   }, [wallet]);
+
+  const address = useMemo(() => {
+    if (!rawAddress) return null;
+    try {
+      return Address.parse(rawAddress).toString({ bounceable: false });
+    } catch {
+      return rawAddress;
+    }
+  }, [rawAddress]);
 
   const shortAddress = useMemo(() => {
     if (!address) return null;

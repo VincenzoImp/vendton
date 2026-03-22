@@ -5,7 +5,7 @@ import { useTonConnect } from "../hooks/useTonConnect";
 import { useDVMs } from "../hooks/useDVMs";
 
 export default function Profile() {
-  const { connected, shortAddress, address } = useTonConnect();
+  const { connected, address } = useTonConnect();
   const { dvms, remove } = useDVMs();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -58,9 +58,9 @@ export default function Profile() {
         <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-500/10">
           <User className="w-7 h-7 text-amber-500" />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-lg font-bold text-[var(--color-text)]">Profile</h1>
-          <p className="text-xs text-[var(--color-hint)]">{shortAddress}</p>
+          <p className="text-[10px] text-[var(--color-hint)] font-mono truncate">{address}</p>
         </div>
       </section>
 
