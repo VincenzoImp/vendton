@@ -212,11 +212,11 @@ export default function Deploy() {
               onChange={(e) => setCode(e.target.value)}
               placeholder={CODE_PLACEHOLDER}
               rows={8}
-              className="w-full px-4 py-3 rounded-xl text-sm font-mono bg-gray-900 text-green-400 placeholder:text-gray-600 outline-none resize-none leading-relaxed"
+              className="w-full px-4 py-3 rounded-xl text-sm font-mono bg-[var(--color-secondary-bg)] text-[var(--color-text)] placeholder:text-[var(--color-hint)] outline-none resize-none leading-relaxed"
               spellCheck={false}
             />
             <p className="text-[10px] text-[var(--color-hint)] mt-1">
-              Runs serverlessly. Access parameters via <code className="text-green-400/70">input</code>, use <code className="text-green-400/70">fetch</code> for HTTP. Return JSON.
+              Runs serverlessly. Access parameters via <code className="font-semibold">input</code>, use <code className="font-semibold">fetch</code> for HTTP. Return JSON.
             </p>
           </div>
 
