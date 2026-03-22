@@ -23,3 +23,19 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* TON Connect button — match app theme */
+[data-tc-connect-button] {
+  --tc-connect-button-background: var(--color-secondary-bg) !important;
+  --tc-connect-button-color: var(--color-text) !important;
+}
+
+button[data-tc-connect-button] {
+  background: var(--color-secondary-bg) !important;
+  color: var(--color-text) !important;
+}
+
+div[data-tc-dropdown-container] {
+  background: var(--color-bg) !important;
+  border-color: var(--color-secondary-bg) !important;
+}
