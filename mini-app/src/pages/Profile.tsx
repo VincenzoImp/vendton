@@ -1,11 +1,14 @@
-import { useMemo } from "react";
-import { User, TrendingUp, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { User, TrendingUp, Trash2, AlertTriangle } from "lucide-react";
 import { useTonConnect } from "../hooks/useTonConnect";
 import { useDVMs } from "../hooks/useDVMs";
 
 export default function Profile() {
   const { connected, shortAddress, address } = useTonConnect();
   const { dvms, remove } = useDVMs();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const ownedDVMs = useMemo(() => {
     if (!address) return [];
@@ -21,15 +24,15 @@ export default function Profile() {
     return ownedDVMs.reduce((sum, d) => sum + d.callCount, 0);
   }, [ownedDVMs]);
 
-  async function handleDelete(dvmId: string, dvmName: string) {
-    if (!confirm(`Delete "${dvmName}"? This cannot be undone.`)) return;
-    if (!address) return;
+  async function confirmDelete() {
+    if (!deleteTarget || !address) return;
+    setDeleting(true);
     try {
       const ownerAddr = address.includes(":") ? address : "0:" + address;
-      await remove(dvmId, ownerAddr);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Delete failed");
-    }
+      await remove(deleteTarget.id, ownerAddr);
+    } catch { /* silently fail */ }
+    setDeleting(false);
+    setDeleteTarget(null);
   }
 
   if (!connected) {
@@ -97,7 +100,7 @@ export default function Profile() {
                     <p className="text-[10px] text-[var(--color-hint)] font-mono">{d.ensName}</p>
                   </div>
                   <button
-                    onClick={() => handleDelete(d.id, d.name)}
+                    onClick={() => setDeleteTarget({ id: d.id, name: d.name })}
                     className="p-1.5 rounded-lg text-[var(--color-hint)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -116,6 +119,51 @@ export default function Profile() {
           </div>
         )}
       </section>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm p-5 rounded-2xl bg-[var(--color-bg)] space-y-4"
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <h3 className="text-sm font-bold text-[var(--color-text)]">Delete DVM</h3>
+              </div>
+              <p className="text-sm text-[var(--color-hint)]">
+                Are you sure you want to delete <strong className="text-[var(--color-text)]">{deleteTarget.name}</strong>? This will also revoke its ENS identity.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-white font-semibold text-sm bg-red-500 disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </button>
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-secondary-bg)] text-[var(--color-hint)]"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
